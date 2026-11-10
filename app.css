@@ -1,0 +1,176 @@
+/* Family Archive — the few additions familytree.css doesn't cover. */
+
+html, body { height: 100%; margin: 0; background: #F4EFE6; }
+@media (prefers-color-scheme: dark) { html:not([data-theme="light"]), html:not([data-theme="light"]) body { background: #191714; } }
+html[data-theme="dark"], html[data-theme="dark"] body { background: #191714; }
+#app { height: 100vh; height: 100dvh; outline: none; }
+.ft-noscript { padding: 24px; font: 16px/1.5 system-ui, sans-serif; }
+
+/* One typeface: names, titles and notes use the interface font instead of the design's serif. */
+.ft-theme { --font-serif: var(--font-sans); }
+
+/* Ukrainian labels are longer than the English ones the grid was sized for. */
+.ft-fact { grid-template-columns: 92px minmax(0, 1fr); }
+.ft-seg--full > button { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; padding: 0 8px; }
+.ft-brand__title { max-width: 280px; }
+
+/* familytree.css uses .ft-seg for both connector lines (§10) and segmented controls (§5);
+   the connector rule would make every segmented control absolute and unclickable. */
+.ft-seg[role="group"] { position: relative; pointer-events: auto; border: 0; }
+
+/* familytree.css caps menus at "100% - 64px" of their positioned parent, which is the 56px top bar
+   (or the 48px drawer bar), so they collapsed to nothing. Cap them by the window instead. */
+.ft-menu { max-height: calc(100vh - 72px); }
+
+/* Union labels sit in the 64px gap between partners; the word "розл." carries the divorced cue. */
+.ft-ulabel { padding: 0 5px; }
+.ft-ulabel.is-divorced::before { content: none; }
+.ft-poster .ft-ulabel { font-size: 9.5px; padding: 0 3px; }
+
+/* The card being hovered or focused sits above its neighbours, so its "+" tooltips aren't hidden. */
+.ft-node.is-focus { z-index: 4; }
+.ft-node:hover, .ft-node:focus-within { z-index: 5; }
+
+/* Quick-add: room for "Невідомо" and the longer relation choices. */
+.ft-qapop { width: 372px; overflow-y: auto; }
+.ft-qapop .ft-row2--auto { grid-template-columns: minmax(0, 1fr) 112px; }
+
+/* Popovers whose two action buttons should sit on one line. */
+.ft-statusbox .ft-pop--right:not([aria-labelledby]) { width: 360px; }
+
+/* Checkbox labels that wrap keep the box beside the first line. */
+.ft-check { align-items: flex-start; }
+.ft-check input { margin-top: 2px; }
+
+/* Notes editor footer: hint on its own line, buttons on the right. */
+.ft-rowend .ft-hint { flex: 1 1 100%; }
+.ft-rowend > span:last-child { margin-left: auto; }
+.ft-textarea { overflow-y: hidden; max-height: 60vh; }
+
+/* People table: fits beside the docked drawer. */
+.ft-table { min-width: 760px; }
+.ft-tr { grid-template-columns: minmax(190px, 2fr) 130px minmax(110px, 1fr) 130px minmax(140px, 1.4fr) 52px; }
+/* Narrow (a phone, or a tablet beside the panel): the name on its own line, birth and death under it;
+   place, parents and photos are in the person's panel. */
+.ft-tablewrap { container-type: inline-size; }
+@container (max-width: 700px) {
+  .ft-table { min-width: 0; }
+  .ft-tr { grid-template-columns: 1fr 1fr; }
+  .ft-tr > :first-child { grid-column: 1 / -1; }
+  .ft-tr > :nth-child(3), .ft-tr > :nth-child(5), .ft-tr > :nth-child(6) { display: none; }
+  .ft-tr:not(.ft-tr--head) > :nth-child(2), .ft-tr:not(.ft-tr--head) > :nth-child(4) { padding-top: 0; }
+  .ft-tr > :nth-child(2) { padding-left: 58px; }
+  .ft-tr--head .ft-th:first-child { height: 32px; }
+}
+
+/* Scope: how much of the tree is drawn, and the way back to the home person. Lives in the canvas toolbar. */
+.ft-scope { padding: 3px 3px 3px 12px; gap: 10px; font-size: var(--fs-13); color: var(--ink-2); white-space: nowrap; min-height: 40px; }
+.ft-scope__text { overflow: hidden; text-overflow: ellipsis; min-width: 0; max-width: 300px; }
+.ft-scope__text strong { color: var(--ink); font-weight: 600; }
+.ft-scope:not(:has(button)) { padding-right: 12px; }
+.is-tablet .ft-scope .ft-kbd { display: none; }
+.is-phone .ft-scope { display: none; }
+
+/* Tablet top bar: Ukrainian labels don't fit, so these two buttons go icon-only. */
+.is-tablet .ft-tight .ft-btn__label { display: none; }
+.is-tablet .ft-tight { padding: 0 8px; }
+.is-tablet .ft-search { flex: 0 1 200px; min-width: 110px; }
+.is-tablet .ft-statusbox { flex: 0 1 auto; min-width: 0; }
+.is-tablet .ft-status { min-width: 0; max-width: 190px; }
+.is-tablet .ft-status > span:nth-child(2) { overflow: hidden; text-overflow: ellipsis; }
+.is-tablet .ft-status__count { display: none; }
+.is-tablet .ft-brand { flex: 0 1 auto; min-width: 0; }
+.is-tablet .ft-brand__title { max-width: 150px; }
+.is-phone .ft-brand { flex: 1 1 0; min-width: 0; }
+.is-phone .ft-brand__title { min-width: 0; }
+.is-phone .ft-spacer { display: none; }
+
+/* With the system font, the design's 550 weight reads as bold; keep controls at a calm 500. */
+.ft-btn, .ft-tab, .ft-seg button, .ft-status, .ft-filter, .ft-link, .ft-ghost, .ft-chip { font-weight: 500; }
+.ft-btn--primary, .ft-btn--danger { font-weight: 600; }
+.is-phone .ft-list__filter { width: 100%; }
+
+/* Tree connectors (SVG): one stroke per segment, square caps so corners meet. */
+.ft-linesvg { position: absolute; overflow: visible; pointer-events: none; }
+.ft-ln { stroke: var(--connector); stroke-width: 2; fill: none; stroke-linecap: square; }
+.ft-ln.is-muted { stroke: var(--connector-muted); }
+.ft-ln.is-hl { stroke: var(--accent-line); }
+.ft-ln.is-dashed { stroke-dasharray: 6 5; stroke-linecap: butt; }
+.ft-ln.is-dotted { stroke-dasharray: 0 5; stroke-linecap: round; stroke-width: 2.5; }
+
+/* Portrait in the drawer: a plain rounded frame (no photo-album corners or mat). */
+.ft-mount { padding: 0; border-radius: var(--r-3); overflow: hidden; background: var(--paper-2); }
+.ft-mount__img { border-radius: inherit; }
+
+/* Drawer: a date that can't be right (death before birth, a future year, 31.02). */
+.ft-input.is-invalid { border-color: var(--danger); }
+.ft-dwarn { margin-top: 8px; }
+
+/* Compact cards are 8px taller than the design's so a name that doesn't fit one line
+   wraps to two (given name, then surname) instead of being shortened to an initial. */
+.ft-node { height: 72px; }
+.ft-card__name.is-2l { white-space: normal; }
+.ft-card__name.is-2l .ft-card__name-t { display: flex; flex-direction: column; min-width: 0; line-height: 1.2; }
+.ft-card__name.is-2l .ft-card__name-t > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ☰ menu: the way back to saving when the browser has paused it. */
+.ft-menu__item.is-accent, .ft-menu__item.is-accent .ft-ico { color: var(--accent); font-weight: 600; }
+
+/* Place suggestions under the place fields in edit mode. */
+.ft-ac { position: relative; }
+.ft-ac__list { top: calc(100% + 4px); left: auto; right: 0; width: max(100%, 280px); max-height: 280px; overflow-y: auto; }
+.ft-ac__opt { display: block; font-size: var(--fs-14); color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Poster: the options panel keeps its content inside (the print button's label is long),
+   and each name line ellipsizes instead of being cut mid-letter. */
+.ft-posteropts { width: 320px; grid-template-columns: minmax(0, 1fr); }
+.ft-posteropts .ft-btn--lg { white-space: normal; height: auto; min-height: 44px; padding-top: 8px; padding-bottom: 8px; }
+.ft-pnode > span:last-child { flex: 1 1 auto; }
+.ft-pnode__name > span, .ft-pnode__years { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ft-pnode { width: 164px; }
+
+/* Phones: banners keep the icon, text and close button on one row. */
+.is-phone .ft-banner { flex-wrap: nowrap; align-items: flex-start; padding: 10px 12px; font-size: var(--fs-13); }
+.is-phone .ft-banner__actions { margin: 0; }
+
+/* Under a date field: how the typed date was read. */
+.ft-datehint { font-size: var(--fs-12); color: var(--ink-3); min-height: 16px; }
+.ft-editgrid .ft-field { align-content: start; }
+.ft-datehint.is-bad { color: var(--danger); }
+
+/* Drawer: who this is to the home person ("Ваша бабуся по матері"). */
+.ft-dkin { margin-top: 4px; font-size: var(--fs-14); font-weight: 550; color: var(--sepia); }
+
+/* Data checks: in the drawer under the facts, and in the People list's "Зауваження" filter. */
+.ft-issues { grid-column: 1 / -1; display: grid; gap: 6px; margin-top: 14px; padding: 10px 12px; border-radius: var(--r-2); background: var(--warn-soft); justify-items: start; }
+.ft-issue { display: flex; gap: 8px; align-items: flex-start; font-size: var(--fs-13); line-height: 1.4; color: var(--ink); }
+.ft-issue .ft-ico { flex: none; margin-top: 2px; color: var(--warn); }
+.ft-issue.is-error .ft-ico { color: var(--danger); }
+.ft-issues .ft-link { font-size: var(--fs-13); margin-left: 22px; }
+.ft-td--issues { grid-column: 1 / -1; display: grid; gap: 4px; padding-top: 0; padding-left: 58px; }
+.ft-rowbtn__issue { display: flex; gap: 6px; align-items: flex-start; font-size: var(--fs-13); color: var(--ink-2); white-space: normal; }
+.ft-rowbtn__issue .ft-ico { flex: none; margin-top: 2px; color: var(--warn); }
+.ft-rowbtn__issue.is-error .ft-ico { color: var(--danger); }
+.ft-rowbtn__issue.is-error { color: var(--danger); }
+.ft-filter.is-warn:not([aria-pressed="true"]) .ft-filter__n { color: var(--warn); }
+
+/* Toasts clear the canvas controls */
+.ft-app.is-view-tree:not(.is-phone) .ft-toasts { bottom: 72px; }
+/* …and stay over the canvas, not on top of the open panel */
+.ft-app.is-drawer:not(.is-phone) .ft-toasts { right: 420px; }
+.ft-app.is-drawer.is-tablet:not(.is-phone) .ft-toasts { right: min(400px, 92%); }
+.ft-app.is-view-tree.is-drawer.is-tablet:not(.is-phone) .ft-toasts { bottom: 128px; }
+/* the overlay panel on narrower screens: canvas controls wrap instead of running under it */
+.ft-app.is-drawer.is-tablet:not(.is-phone) .ft-controls { right: calc(min(400px, 92%) + 16px); }
+
+/* Long words (links in notes, places without spaces) wrap instead of widening the panel */
+.ft-dname, .ft-md, .ft-fact__place, .ft-dkin, .ft-photo__cap, .ft-rel__name, .ft-issue span { overflow-wrap: anywhere; }
+
+/* The selected tab, choice or card keeps a visible focus ring for keyboard users */
+.ft-theme .ft-seg button[aria-pressed="true"]:focus-visible, .ft-theme .ft-tab[aria-pressed="true"]:focus-visible, .ft-theme .ft-node .ft-card:focus-visible { box-shadow: var(--focus-ring); }
+
+/* Tablet: the overlay panel would cover the right side of the lists */
+.ft-app.is-drawer.is-tablet:not(.is-phone) .ft-list { padding-right: calc(min(400px, 92%) + 16px); }
+/* Descendants on a phone: a long tag ("усиновлення · мати — Лариса") moves under the name instead of off the screen. */
+.is-phone .ft-dvrow { flex-wrap: wrap; row-gap: 2px; }
+.is-phone .ft-dvrow .ft-chip { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

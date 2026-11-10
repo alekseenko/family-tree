@@ -1,0 +1,8 @@
+# Your own tree: family.js, photos and backups. Never published.
+data/
+
+# Build output (scripts/build-site.js)
+_site/
+
+.DS_Store
+.claude/

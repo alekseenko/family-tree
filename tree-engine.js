@@ -17,7 +17,7 @@
   // Card and spacing sizes in CSS px. Must match .ft-node / .ft-pnode in familytree.css.
   var DIMS = {
     compact:  { cw: 188, ch: 72,  cg: 88, sg: 24, gg: 48, rg: 88 },
-    expanded: { cw: 172, ch: 224, cg: 88, sg: 24, gg: 48, rg: 80 },
+    expanded: { cw: 172, ch: 272, cg: 88, sg: 24, gg: 48, rg: 80 },
     poster:   { cw: 164, ch: 64,  cg: 68, sg: 12, gg: 20, rg: 76 }
   };
   // cw/ch = card width/height · cg = gap between partners · sg = gap between siblings
@@ -775,8 +775,11 @@
         var sx = left + g.src.x, sy = g.src.from === 'union' ? y + D.ch / 2 : y + D.ch;
         var hl = hlFam(g.fam), tone = hl ? 'hl' : '';
         var kxs = g.kids.map(function (k) { return left + k.x + k.sub.ax; });
-        V(sx, sy, busY, 'solid', tone);
+        // the chosen person's own line runs all the way up to their parents
+        var fi = g.kids.findIndex(function (k) { return k.kid === focusId; });
+        V(sx, sy, busY, 'solid', hl || fi >= 0 ? 'hl' : '');
         H(Math.min.apply(null, [sx].concat(kxs)), Math.max.apply(null, [sx].concat(kxs)), busY, 'solid', tone);
+        if (!hl && fi >= 0) H(sx, kxs[fi], busY, 'solid', 'hl');
         var ny = rowY(row + 1);
         g.kids.forEach(function (k, i) {
           V(kxs[i], busY, ny, relStyle(k.rel), hl || k.kid === focusId ? 'hl' : '');

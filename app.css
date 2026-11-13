@@ -186,3 +186,6 @@ html[data-theme="dark"], html[data-theme="dark"] body { background: #191714; }
 .is-phone .ft-framer { grid-template-columns: 1fr; justify-items: start; }
 .ft-framer__zoomrow { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: center; font-size: var(--fs-13); color: var(--ink-2); }
 .ft-framer__zoom { width: 100%; accent-color: var(--accent); }
+
+/* A narrow top bar: tighter gaps so the title and the save status keep their words. */
+.ft-app.is-tablet:not(.is-phone) .ft-topbar { gap: 8px; }

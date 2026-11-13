@@ -158,6 +158,8 @@
   }
   function setView(v) {
     // on a phone the person sheet would cover the list
+    // the timeline opens on the chosen person's years
+    if (v === 'time' && s.view !== 'time') s.tlJump = true;
     set({ view: v, qa: null, depthOpen: false, menuOpen: false, drawerOpen: isPhone() && v !== s.view ? false : s.drawerOpen, dvRoot: v === 'desc' ? s.focusId : s.dvRoot });
     if (v === 'tree') { s.centered = false; }
   }
@@ -672,19 +674,22 @@
       el('h1.ft-brand__title', null, d.title || 'Родинний архів'),
       d.meta && d.meta.sample && (!s.sampleNote || sample) && !phone ? el('span.ft-chip.ft-chip--sepia', { title: sample ? sampleWhy() : null }, 'Зразок даних') : null,
       viewOnly || sample ? el('span.ft-chip', null, 'Лише перегляд') : null));
-    bar.appendChild(el('nav.ft-tabs', { 'aria-label': 'Подання' }, [['tree', 'Дерево', '1'], ['people', 'Люди', '2'], ['desc', 'Нащадки', '3']].map(function (t) {
+    bar.appendChild(el('nav.ft-tabs', { 'aria-label': 'Подання' }, [['tree', 'Дерево', '1'], ['people', 'Люди', '2'], ['desc', 'Нащадки', '3'], ['time', 'Хронологія', '4']].map(function (t) {
       return el('button.ft-tab', { type: 'button', 'aria-pressed': String(s.view === t[0]), 'aria-keyshortcuts': t[2], title: t[1] + ' (' + t[2] + ')', 'data-k': 'tab:' + t[0], on: { click: function () { setView(t[0]); } } }, t[1]);
     })));
-    bar.appendChild(renderSearch(phone, tablet));
+    // navigation beside the title; search on the right with the other tools
     bar.appendChild(el('div.ft-spacer'));
-    if (phone) bar.appendChild(el('button.ft-icon-btn', { type: 'button', 'aria-label': 'Пошук', 'aria-expanded': String(s.phoneSearch), on: { click: function () { set({ phoneSearch: !s.phoneSearch, focusReq: !s.phoneSearch ? 'search' : null }); } } }, icon('search', 'ft-ico--lg')));
+    bar.appendChild(renderSearch(phone, tablet));
+    // below 1100px search is an icon that opens a full-width row, so the title and the save status keep their room
+    if (tablet) bar.appendChild(el('button.ft-icon-btn', { type: 'button', 'aria-label': 'Пошук', 'aria-keyshortcuts': '/', 'aria-expanded': String(s.phoneSearch), on: { click: function () { set({ phoneSearch: !s.phoneSearch, focusReq: !s.phoneSearch ? 'search' : null }); } } }, icon('search', 'ft-ico--lg')));
     if (!phone && !s.otherTab && s.screen === 'app' && sample) {
       // the sample banner has the same button until it is dismissed
       if (St.S.fsSupported && !s.sampleNote) bar.appendChild(el('button.ft-btn.ft-btn--sm.ft-btn--primary', { type: 'button', 'data-k': 'own-tree', title: 'Виберіть порожню папку для нового дерева або папку, де вже є family.js', on: { click: connect } }, icon('folder', 'ft-ico--sm'), 'Своє дерево…'));
     } else if (!phone && !s.otherTab && s.screen === 'app') {
       if (s.present) bar.appendChild(el('button.ft-btn.ft-btn--sm', { type: 'button', 'data-k': 'present', title: 'Повернути кнопки редагування', on: { click: function () { setPresent(false); } } }, icon('edit', 'ft-ico--sm'), 'Редагувати'));
       else {
-        bar.appendChild(el('button.ft-btn.ft-btn--sm.ft-btn--ghost.ft-tight', { type: 'button', 'data-k': 'present', 'aria-label': 'Режим перегляду', title: 'Режим перегляду: сховати все для редагування — щоб показати дерево родині', on: { click: function () { setPresent(true); } } }, icon('eye', 'ft-ico--sm'), el('span.ft-btn__label', null, 'Перегляд')));
+        // below 900px it stays in the ☰ menu (Режим перегляду) to leave room for the title and the save status
+        if (s.appW >= 900) bar.appendChild(el('button.ft-btn.ft-btn--sm.ft-btn--ghost.ft-tight', { type: 'button', 'data-k': 'present', 'aria-label': 'Режим перегляду', title: 'Режим перегляду: сховати все для редагування — щоб показати дерево родині', on: { click: function () { setPresent(true); } } }, icon('eye', 'ft-ico--sm'), el('span.ft-btn__label', null, 'Перегляд')));
         bar.appendChild(renderStatus());
       }
     }
@@ -709,7 +714,7 @@
   }
   function renderSearch(phone, tablet) {
     var q = String(s.search || '').trim().toLowerCase(), res = searchResults();
-    var box = el('div.ft-search' + (phone && s.phoneSearch ? '.is-open' : ''));
+    var box = el('div.ft-search' + (tablet && s.phoneSearch ? '.is-open' : ''));
     box.appendChild(icon('search', 'ft-search__icon'));
     box.appendChild(el('input.ft-input.ft-search__input', {
       type: 'search', placeholder: 'Пошук людей', 'aria-label': 'Пошук людей', autocomplete: 'off', value: s.search, 'data-k': 'search',
@@ -748,11 +753,13 @@
     return box;
   }
 
+  // On a narrow bar the save status keeps its meaning in fewer words (the tooltip has the full text)
+  var SHORT_STATUS = { 'Збережено лише в браузері': 'У браузері', 'Збережено в папці': 'У папці', 'Не вдалося зберегти': 'Не збережено', 'Дозволити збереження': 'Дозволити' };
   function renderStatus() {
     var st = statusInfo();
     var box = el('div.ft-statusbox');
-    box.appendChild(el('button.ft-status.' + st.cls, { type: 'button', title: st.title, 'aria-expanded': String(s.statusOpen), 'data-k': 'status', on: { click: st.click } },
-      el('span.ft-status__dot', { 'aria-hidden': 'true' }), el('span', null, st.label),
+    box.appendChild(el('button.ft-status.' + st.cls, { type: 'button', title: st.label + ' — ' + st.title, 'aria-expanded': String(s.statusOpen), 'data-k': 'status', on: { click: st.click } },
+      el('span.ft-status__dot', { 'aria-hidden': 'true' }), el('span', null, isTablet() ? SHORT_STATUS[st.label] || st.label : st.label),
       st.count > 0 ? el('span.ft-status__count', null, '· ' + count(st.count, 'зміна чекає', 'зміни чекають', 'змін чекають')) : null));
     if (st.download) box.appendChild(el('button.ft-btn.ft-btn--sm.ft-btn--warn.ft-tight', { type: 'button', 'aria-label': 'Завантажити family.js', title: 'Завантажити family.js', on: { click: download } }, icon('download'), el('span.ft-btn__label', null, 'Завантажити')));
     if (s.statusOpen) {
@@ -901,7 +908,7 @@
   /* ---------------------------------------------------------------- main */
   function renderMain() {
     var main = dom.main, hasPeople = s.data && Object.keys(s.data.people).length > 0;
-    main.setAttribute('aria-label', s.view === 'tree' ? 'Родинне дерево' : s.view === 'people' ? 'Список людей' : 'Нащадки');
+    main.setAttribute('aria-label', s.view === 'tree' ? 'Родинне дерево' : s.view === 'people' ? 'Список людей' : s.view === 'time' ? 'Хронологія' : 'Нащадки');
     var showTree = s.data && s.view === 'tree' && hasPeople && (s.screen === 'app' || s.screen === 'welcome');
     if (showTree) {
       if (dom.vp.parentNode !== main) { main.textContent = ''; main.appendChild(dom.vp); dom.other = null; }
@@ -1462,6 +1469,7 @@
     if (code === 'Digit1') return act(function () { setView('tree'); });
     if (code === 'Digit2') return act(function () { setView('people'); });
     if (code === 'Digit3') return act(function () { setView('desc'); });
+    if (code === 'Digit4') return act(function () { setView('time'); });
     if (k === 'Home') { if (tree) act(goRoot); return; }
     // a card reached with Tab is the one Enter and Delete mean, even before it was clicked
     var tabbed = t.getAttribute && t.getAttribute('data-card');
@@ -1470,7 +1478,7 @@
     if (k === 'Delete' || k === 'Backspace') { if (!noEdit && fid && tree && !inPanel) act(function () { askDelete(tabbed && P(tabbed) ? tabbed : fid); }); }
   }
   function openSearch() {
-    if (isPhone()) set({ phoneSearch: true, focusReq: 'search' });
+    if (isTablet()) set({ phoneSearch: true, focusReq: 'search' });
     else { var i = root.querySelector('.ft-search__input'); if (i) i.focus(); }
   }
 

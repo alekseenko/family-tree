@@ -330,7 +330,7 @@
     ids.forEach(function (id) {
       var p = d.people[id], n = L.nodes[id];
       var ph = el('span.ft-pnode__photo');
-      if (p.photo) ph.appendChild(A.img(p.photo)); else ph.textContent = FE.initials(p);
+      if (p.photo) ph.appendChild(A.portrait(p)); else ph.textContent = FE.initials(p);
       world.appendChild(el('div.ft-pnode' + (p.deceased ? '.is-deceased' : '') + (id === pfocus ? '.is-focus' : '') + (!p.given && !p.surname ? '.is-unknown' : ''),
         { style: 'transform: translate(' + Math.round(n.x) + 'px, ' + Math.round(n.y) + 'px)' },
         ph, el('span', { style: 'min-width:0' }, el('span.ft-pnode__name', null, p.given && p.surname ? [el('span', null, p.given.trim()), el('span', null, p.surname.trim())] : FE.nameOf(p)), el('span.ft-pnode__years', { style: 'display:block' }, FE.yearsOf(p) || ' '))));
@@ -345,7 +345,7 @@
         el('div.ft-poster__legend', null,
           leg('', 'Шлюб · рідна дитина'), leg('border-top-style: dashed', 'Партнери · усиновлена дитина'), leg('border-top-style: dotted', 'Нерідна дитина чи під опікою'),
           el('span', null, el('b', { style: 'font-weight:600' }, 'шл.'), 'Шлюб'), el('span', null, el('b', { style: 'font-weight:600' }, 'розл.'), 'Розлучення'),
-          leg('width:14px;height:14px;border:1px solid #6A6256;border-top:0;background:linear-gradient(225deg, #6A6256 0 50%, transparent 50%)', 'Померлі')),
+          leg('width:14px;height:14px;border:1px solid #6A6256;background:linear-gradient(135deg, transparent 0 30%, #2B2722 30% 52%, transparent 52%)', 'Померлі')),
         el('span', null, ids.length + ' з ' + count(total, 'людини', 'людей', 'людей') + ' в архіві · Родинний архів')));
 
     var gen = function (key) { return [1, 2, 3, 4].map(function (n) { return { label: String(n), sel: s[key] === n, pick: function () { var p = {}; p[key] = n; A.set(p); } }; }); };

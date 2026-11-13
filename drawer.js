@@ -76,10 +76,14 @@
     var s = A.s, d = s.data, pid = p.id, unknown = !p.given && !p.surname;
     var mountImg = el('div.ft-mount__img');
     if (p.photo) {
-      var im = A.img(p.photo, 'Портрет: ' + FE.nameOf(p), el('span.ft-mount__initials', null, FE.initials(p)));
+      var im = A.portrait(p, 'Портрет: ' + FE.nameOf(p), el('span.ft-mount__initials', null, FE.initials(p)));
       mountImg.appendChild(zoomable(A, im, p.photo, 'портрет ' + FE.nameOf(p)));
     } else mountImg.appendChild(el('span.ft-mount__initials', null, FE.initials(p)));
     var mount = el('div.ft-mount' + (p.deceased ? '.is-deceased' : ''), null, mountImg);
+    // the main photo can be framed when it is one of the person's photos
+    var framable = !ro && p.photo && (p.photos || []).some(function (x) { return x.src === p.photo; });
+    if (framable && s.frameEdit !== pid) mount = el('div.ft-mountcol', null, mount,
+      el('button.ft-link.ft-mount__frame', { type: 'button', 'data-k': 'frame', on: { click: function () { A.set({ frameEdit: pid, focusReq: 'frame-box' }); } } }, 'Кадрувати'));
 
     var age = p.deceased ? FE.ageBetween(p.birth.date, p.death.date) : null, problem = FE.dateProblem(p);
     if (age != null && age < 0) age = null;
@@ -100,6 +104,7 @@
         p.deceased ? fact('Смерть', died ? died + (age != null ? ' · ' + count(age, 'рік', 'роки', 'років') : '') : 'Дату не вказано', !died, p.death.place) : null));
     }
     var sec = el('section.ft-dhead', null, mount, text);
+    if (framable && s.frameEdit === pid) sec.appendChild(framer(A, p));
     var found = A.issues()[p.id];
     // while editing, the problems sit above the fields that fix them
     if (editing) sec.appendChild(editGrid(A, p));
@@ -107,6 +112,58 @@
       found.map(function (x) { return el('p.ft-issue.is-' + x.level, null, icon(x.level === 'error' ? 'alert' : 'info', 'ft-ico--sm'), el('span', null, x.text)); }),
       !editing && !ro ? el('button.ft-link', { type: 'button', on: { click: A.startEdit } }, 'Виправити') : null), editing ? sec.querySelector('.ft-editgrid') : null);
     return sec;
+  }
+
+  // Framing the main photo: drag it inside a square (what cards and avatars show), or move it with
+  // the arrow keys. The position is the photo's CSS object-position.
+  function framer(A, p) {
+    var pid = p.id, ph = p.photos.find(function (x) { return x.src === p.photo; });
+    var cur = (ph.pos || '50% 50%').split(' ').map(parseFloat), x = cur[0], y = cur[1];
+    var im = A.img(p.photo, 'Головне фото: ' + FE.nameOf(p));
+    im.draggable = false;
+    var box = el('div.ft-framer__box', { tabindex: '0', role: 'group', 'data-k': 'frame-box', 'aria-label': 'Кадр головного фото: перетягніть або змінюйте стрілками',
+      'aria-describedby': 'ft-framer-hint' }, im);
+    var show = function () { im.style.objectPosition = Math.round(x) + '% ' + Math.round(y) + '%'; };
+    var save = function () {
+      var pos = Math.round(x) + '% ' + Math.round(y) + '%';
+      A.commit(function (d) {
+        var q = d.people[pid], f = q && q.photos.find(function (z) { return z.src === q.photo; });
+        if (!f) return false;
+        if (pos === '50% 50%') delete f.pos; else f.pos = pos;
+      }, { touch: pid, coalesce: 'pos:' + pid });
+    };
+    show();
+    // how far the cropped image reaches past the square on each side, in screen pixels
+    var spare = function () {
+      var r = box.getBoundingClientRect(), nw = im.naturalWidth || 1, nh = im.naturalHeight || 1, k = Math.max(r.width / nw, r.height / nh);
+      return { x: nw * k - r.width, y: nh * k - r.height };
+    };
+    var drag = null;
+    box.addEventListener('pointerdown', function (e) { e.preventDefault(); box.setPointerCapture(e.pointerId); drag = { sx: e.clientX, sy: e.clientY, x: x, y: y, room: spare() }; box.classList.add('is-dragging'); });
+    box.addEventListener('pointermove', function (e) {
+      if (!drag) return;
+      // dragging the picture right shows more of its left side
+      if (drag.room.x > 1) x = Math.min(100, Math.max(0, drag.x - (e.clientX - drag.sx) / drag.room.x * 100));
+      if (drag.room.y > 1) y = Math.min(100, Math.max(0, drag.y - (e.clientY - drag.sy) / drag.room.y * 100));
+      show();
+    });
+    var end = function () { if (!drag) return; drag = null; box.classList.remove('is-dragging'); save(); };
+    box.addEventListener('pointerup', end);
+    box.addEventListener('pointercancel', end);
+    box.addEventListener('keydown', function (e) {
+      var step = e.shiftKey ? 1 : 5, dx = { ArrowLeft: -step, ArrowRight: step }[e.key] || 0, dy = { ArrowUp: -step, ArrowDown: step }[e.key] || 0;
+      if (!dx && !dy) return;
+      e.preventDefault(); e.stopPropagation();
+      x = Math.min(100, Math.max(0, x + dx)); y = Math.min(100, Math.max(0, y + dy));
+      show(); save();
+    });
+    return el('div.ft-framer', { role: 'group', 'aria-label': 'Кадрування головного фото' },
+      box,
+      el('div.ft-framer__side', null,
+        el('p.ft-hint', { id: 'ft-framer-hint' }, 'Перетягніть фото, щоб вибрати, що видно на картках і в мініатюрах. Стрілки зсувають точніше (із Shift — по 1%).'),
+        el('div.ft-framer__acts', null,
+          el('button.ft-btn.ft-btn--sm', { type: 'button', on: { click: function () { x = 50; y = 50; show(); save(); } } }, 'По центру'),
+          el('button.ft-btn.ft-btn--sm.ft-btn--primary', { type: 'button', on: { click: function () { A.set({ frameEdit: null, focusReq: 'frame' }); } } }, 'Готово'))));
   }
 
   function patchPerson(A, pid, path, val) {

@@ -20,7 +20,7 @@
     screen: 'loading', fileError: '', otherTab: false,
     showLegend: false, showKeys: false, posterOpen: false, depthOpen: false,
     listSort: 'name', listDir: 1, listFilter: 'all', listQuery: '',
-    dvCollapsed: {}, notesEdit: false, notesDraft: '', dragOver: false, captionEdit: null,
+    dvCollapsed: {}, notesEdit: false, notesDraft: '', dragOver: false, captionEdit: null, frameEdit: null,
     pulseId: null, upGen: 3, downGen: 3, sibFamilies: false,
     posterUp: 3, posterDown: 2, posterSibs: true, posterPhotos: true,
     first: { name: '', sex: 'u', year: '' }, sampleNote: pref('sampleNote', '1') === '1',
@@ -109,7 +109,7 @@
     o = o || {};
     if (!pid || !P(pid)) return;
     if (pid !== s.focusId) keepNotes();
-    var base = { relEdit: null, relConfirm: false, notesEdit: false, captionEdit: null, moreOpen: false, qa: null, searchOpen: false, ac: null };
+    var base = { relEdit: null, relConfirm: false, notesEdit: false, captionEdit: null, frameEdit: null, moreOpen: false, qa: null, searchOpen: false, ac: null };
     if (o.view) base.view = o.view;
     if (pid === s.focusId) {
       if (!o.noOpen) base.drawerOpen = true;
@@ -544,11 +544,11 @@
     if (!d.meta.version) d.meta.version = 1;
     layoutCache = null;
     St.setCurrent(d);
-    Object.assign(s, { data: d, rev: s.rev + 1, focusId: d.rootId, centered: false, editMode: false, relEdit: null, qa: null, notesEdit: false, captionEdit: null, lightbox: null }, extra || {});
+    Object.assign(s, { data: d, rev: s.rev + 1, focusId: d.rootId, centered: false, editMode: false, relEdit: null, qa: null, notesEdit: false, captionEdit: null, frameEdit: null, lightbox: null }, extra || {});
     schedule();
   }
   function setPresent(on) {
-    Object.assign(s, { present: on, editMode: false, qa: null, relEdit: null, relConfirm: false, notesEdit: false, captionEdit: null, menuOpen: false, moreOpen: false });
+    Object.assign(s, { present: on, editMode: false, qa: null, relEdit: null, relConfirm: false, notesEdit: false, captionEdit: null, frameEdit: null, menuOpen: false, moreOpen: false });
     setPref('present', on ? '1' : '0');
     try { history.replaceState(null, '', on ? '#present' : location.pathname + location.search); } catch (e) { /* file:// may refuse */ }
     schedule();
@@ -916,9 +916,21 @@
   /* ---------------------------------------------------------------- tree canvas */
   var nodeEls = {}, lastPos = {}, linesKey = '';
 
+  // The main photo's framing ("x% y%"): which part shows when it's cropped to a square or a frame.
+  // It belongs to the photo, so it comes back when that photo is made the main one again.
+  function portraitPos(p) {
+    var ph = p.photo && (p.photos || []).find(function (x) { return x.src === p.photo; });
+    return ph && ph.pos || '';
+  }
+  function portrait(p, alt, fallback) {
+    var i = img(p.photo, alt, fallback), pos = portraitPos(p);
+    if (pos && i.tagName === 'IMG') i.style.objectPosition = pos;
+    return i;
+  }
+  A.portrait = portrait; A.portraitPos = portraitPos;
   function avatar(p, cls) {
     var a = el('span.ft-av' + (cls ? '.' + cls : '') + (p.deceased ? '.is-deceased' : ''), { 'aria-hidden': 'true' });
-    a.appendChild(p.photo ? img(p.photo, '', document.createTextNode(FE.initials(p))) : document.createTextNode(FE.initials(p)));
+    a.appendChild(p.photo ? portrait(p, '', document.createTextNode(FE.initials(p))) : document.createTextNode(FE.initials(p)));
     return a;
   }
   // <img> for a stored photo; if it can't be shown (yet), `fallback` takes its place.
@@ -963,13 +975,13 @@
     return n;
   }
   function fillNode(n, id, p, opt) {
-    var sig = JSON.stringify([FE.nameOf(p), FE.yearsOf(p), opt.place, p.photo, opt.isRoot, opt.more, opt.canAdd, opt.isFocus, St.S.mode + St.S.perm, s.density]);
+    var sig = JSON.stringify([FE.nameOf(p), FE.yearsOf(p), opt.place, p.photo, portraitPos(p), opt.isRoot, opt.more, opt.canAdd, opt.isFocus, St.S.mode + St.S.perm, s.density]);
     if (n._sig === sig) return;
     n._sig = sig;
     n.textContent = '';
     var photo = el('span.ft-card__photo');
     var initials = el('span.ft-card__initials', null, FE.initials(p));
-    photo.appendChild(p.photo ? img(p.photo, '', initials) : initials);
+    photo.appendChild(p.photo ? portrait(p, '', initials) : initials);
     var nameT = el('span.ft-card__name-t', null, FE.nameOf(p));
     var name = el('span.ft-card__name', null, nameT);
     n._fit = { over: function () { return nameOverflows(nameT, p); }, apply: function () { fitName(nameT, p); } };
@@ -1032,7 +1044,10 @@
       linesKey = key;
       dom.lines.textContent = '';
       dom.lines.appendChild(FA.linesSvg(L.segs));
-      L.labels.forEach(function (l) { dom.lines.appendChild(el('span.ft-ulabel', { cls: l.cls, style: 'left:' + Math.round(l.x) + 'px;top:' + Math.round(l.y) + 'px' }, l.text)); });
+      // beside the chosen card, the side + buttons sit on the union line: its label steps just below them
+      var fp = L.nodes[s.focusId], dims = D(), drop = root.classList.contains('is-touch') ? 28 : 24;
+      var nearPlus = function (l) { return !roNow && fp && Math.abs(l.y - (fp.y + dims.ch / 2)) < 6 && (Math.abs(l.x - fp.x) < 80 || Math.abs(l.x - fp.x - dims.cw) < 80); };
+      L.labels.forEach(function (l) { dom.lines.appendChild(el('span.ft-ulabel', { cls: l.cls, style: 'left:' + Math.round(l.x) + 'px;top:' + Math.round(l.y + (nearPlus(l) ? drop : 0)) + 'px' }, l.text)); });
       L.tags.forEach(function (l) { dom.lines.appendChild(el('span.ft-ltag', { style: 'left:' + Math.round(l.x) + 'px;top:' + Math.round(l.y) + 'px' }, l.text)); });
       dom.ghosts.textContent = '';
       if (!roNow) L.ghosts.forEach(function (g) {
@@ -1085,7 +1100,7 @@
         el('span.ft-legend__h', { style: 'margin-top:4px' }, 'Діти'),
         row(ln(), 'Рідні'), row(ln('is-dashed'), 'Усиновлені (з позначкою)'), row(ln('is-dotted'), 'Нерідні чи під опікою (з позначкою)'),
         el('span.ft-legend__h', { style: 'margin-top:4px' }, 'Картки'),
-        row(el('span.ft-legend__corner'), 'Померлі — загнутий кут, чорно-біле фото'),
+        row(el('span.ft-legend__corner'), 'Померлі — стрічка в лівому куті, чорно-біле фото'),
         row(el('span.ft-chip.ft-chip--muted', { style: 'justify-self:start' }, '+2'), 'Родичі, яких тут не показано')));
     }
     var fp = s.data.people[s.focusId];
@@ -1365,6 +1380,7 @@
       return true;
     }
     if (s.posterOpen) { set({ posterOpen: false, focusReq: 'card:' + s.focusId }); return true; }
+    if (s.frameEdit) { set({ frameEdit: null, focusReq: 'frame' }); return true; }
     if (s.captionEdit) { set({ captionEdit: null }); return true; }
     if (s.relEdit) { set({ relEdit: null, relConfirm: false }); return true; }
     if (s.notesEdit) { set({ notesEdit: false }); return true; }

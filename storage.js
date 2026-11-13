@@ -112,6 +112,8 @@
       var phIds = Object.create(null);
       p.photos.forEach(function (x, i) {
         x.caption = str(x.caption);
+        // framing of the main photo: "x% y%", each 0–100
+        if (x.pos != null && !/^(100|\d{1,2}(\.\d+)?)% (100|\d{1,2}(\.\d+)?)%$/.test(x.pos)) delete x.pos;
         x.id = x.id ? safeId(x.id, phIds, 'ph') : safeId('ph-' + id + '-' + (i + 1), phIds, 'ph');
       });
       if (!okSrc(p.photo) || !p.photo) p.photo = null;
@@ -921,6 +923,7 @@
           L.push('1 OBJE'); L.push('2 FILE ' + x.src);
           if (x.caption) L.push('2 TITL ' + x.caption);
           if (x.src === p.photo) L.push('2 _PRIM Y');
+          if (x.pos) L.push('2 _POSI ' + x.pos);
         });
       });
       var REL_OUT = { bio: 'Natural', adopted: 'Adopted', step: 'Step', foster: 'Foster' };
@@ -989,6 +992,7 @@
             if (file && !/^([a-z]+:|\/|\\)/i.test(file)) {
               var phid = 'ph-' + id + '-' + (p.photos.length + 1);
               p.photos.push({ id: phid, src: file, caption: g('TITL') });
+              if (g('_POSI')) p.photos[p.photos.length - 1].pos = g('_POSI').trim();
               if (/^y/i.test(g('_PRIM'))) p.photo = file;
             }
           }

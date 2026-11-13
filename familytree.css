@@ -23,6 +23,7 @@
   --connector: #8C8170;      /* tree lines, 3.3:1 on paper */
   --connector-muted: #ADA28F;/* divorced / co-parent lines */
   --corner: #3B352D;         /* photo-mount corners */
+  --ribbon: #2B2722;         /* the mourning ribbon across a deceased person's card */
   /* accent — bottle green */
   --accent: #2E5B4E;
   --accent-hover: #244A3F;
@@ -76,7 +77,7 @@
 .ft-theme[data-theme="dark"] {
   --paper: #191714; --paper-2: #221F1B; --paper-dot: #2E2A25; --surface: #26221D; --surface-2: #2F2A24;
   --ink: #EFE8DC; --ink-2: #C3B9A9; --ink-3: #A39988;
-  --line: #3A342D; --line-strong: #564E43; --field-line: #7A7062; --connector: #8E8472; --connector-muted: #655C50; --corner: #6A6153;
+  --line: #3A342D; --line-strong: #564E43; --field-line: #7A7062; --connector: #8E8472; --connector-muted: #655C50; --corner: #6A6153; --ribbon: #A39988;
   --accent: #8CC0AB; --accent-hover: #A3CFBD; --accent-ink: #13201B; --accent-soft: #233630; --accent-line: #8CC0AB;
   --sepia: #DDAE7E; --sepia-soft: #3A2D20; --warn: #EBB66F; --warn-soft: #3A2C17; --warn-dot: #EBB66F;
   --danger: #F0907F; --danger-ink: #2A1411; --danger-soft: #3E2420; --ok: #8CC0AB;
@@ -89,7 +90,7 @@
   .ft-theme[data-theme="system"] {
     --paper: #191714; --paper-2: #221F1B; --paper-dot: #2E2A25; --surface: #26221D; --surface-2: #2F2A24;
     --ink: #EFE8DC; --ink-2: #C3B9A9; --ink-3: #A39988;
-    --line: #3A342D; --line-strong: #564E43; --field-line: #7A7062; --connector: #8E8472; --connector-muted: #655C50; --corner: #6A6153;
+    --line: #3A342D; --line-strong: #564E43; --field-line: #7A7062; --connector: #8E8472; --connector-muted: #655C50; --corner: #6A6153; --ribbon: #A39988;
     --accent: #8CC0AB; --accent-hover: #A3CFBD; --accent-ink: #13201B; --accent-soft: #233630; --accent-line: #8CC0AB;
     --sepia: #DDAE7E; --sepia-soft: #3A2D20; --warn: #EBB66F; --warn-soft: #3A2C17; --warn-dot: #EBB66F;
     --danger: #F0907F; --danger-ink: #2A1411; --danger-soft: #3E2420; --ok: #8CC0AB;
@@ -314,7 +315,8 @@
 .ft-node.is-focus .ft-card { border-color: var(--accent-line); box-shadow: 0 0 0 1px var(--accent-line), var(--shadow-2); }
 .ft-node.is-focus .ft-card__name { font-weight: 600; }
 .ft-node.is-deceased .ft-card__photo img { filter: var(--photo-deceased); }
-.ft-node.is-deceased .ft-card::after { content: ""; position: absolute; top: 0; right: 0; width: 14px; height: 14px; background: linear-gradient(225deg, var(--line-strong) 0 50%, transparent 50%); }
+/* deceased: a narrow mourning ribbon across the top-left corner, over the photo's corner */
+.ft-node.is-deceased .ft-card::after { content: ""; position: absolute; top: 0; left: 0; width: 26px; height: 26px; z-index: 1; pointer-events: none; border-top-left-radius: inherit; background: linear-gradient(135deg, transparent 0 40%, var(--ribbon) 40% 56%, transparent 56%); }
 .ft-node.is-unknown .ft-card { border-style: dashed; border-color: var(--line-strong); background: transparent; box-shadow: none; }
 .ft-node.is-unknown .ft-card__name { font-style: italic; color: var(--ink-2); }
 .ft-node.is-new .ft-card { animation: ft-pulse 1.4s var(--ease) 1; }
@@ -333,9 +335,8 @@
 .ft-qa .ft-ico { width: 14px; height: 14px; }
 .ft-qa--up { left: calc(50% - 12px); top: -22px; }
 .ft-qa--down { left: calc(50% - 12px); bottom: -22px; }
-/* the side buttons sit above the middle, where the union line and its label ("шл. 1989") run */
-.ft-qa--left { left: -12px; top: -4px; }
-.ft-qa--right { right: -12px; top: -4px; }
+.ft-qa--left { left: -12px; top: calc(50% - 12px); }
+.ft-qa--right { right: -12px; top: calc(50% - 12px); }
 .ft-node:hover .ft-qa, .ft-node:focus-within .ft-qa, .ft-node.is-focus .ft-qa { opacity: 1; transform: none; }
 .ft-qa:hover, .ft-qa:focus-visible { background: var(--accent); color: var(--accent-ink); }
 .ft-qa::after { content: attr(data-tip); position: absolute; padding: 3px 7px; border-radius: var(--r-1); background: var(--toast-bg); color: var(--toast-fg); font-size: var(--fs-12); font-weight: 550; white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity var(--dur-1); }
@@ -348,8 +349,8 @@
 .is-touch .ft-node.is-focus .ft-qa { opacity: 1; transform: none; }
 .is-touch .ft-qa--up { left: calc(50% - 17px); top: -30px; }
 .is-touch .ft-qa--down { left: calc(50% - 17px); bottom: -30px; }
-.is-touch .ft-qa--left { left: -17px; top: -12px; }
-.is-touch .ft-qa--right { right: -17px; top: -12px; }
+.is-touch .ft-qa--left { left: -17px; top: calc(50% - 17px); }
+.is-touch .ft-qa--right { right: -17px; top: calc(50% - 17px); }
 /* ghost slot */
 .ft-ghost { position: absolute; left: 0; top: 0; width: 188px; height: 64px; display: flex; align-items: center; justify-content: center; gap: 6px; border: 1.5px dashed var(--line-strong); border-radius: var(--r-2); background: transparent; color: var(--ink-2); font-size: var(--fs-13); font-weight: 550; cursor: pointer; }
 .ft-ghost:hover { border-color: var(--accent-line); color: var(--accent); background: var(--accent-soft); }
@@ -372,7 +373,7 @@
 .ft-legend__line.is-dashed { border-top-style: dashed; }
 .ft-legend__line.is-dotted { border-top-style: dotted; }
 .ft-legend__line.is-muted { border-top-color: var(--connector-muted); }
-.ft-legend__corner { width: 26px; height: 18px; border: 1px solid var(--line); border-radius: 3px; background: linear-gradient(225deg, var(--line-strong) 0 6px, var(--surface) 6px); }
+.ft-legend__corner { width: 26px; height: 18px; border: 1px solid var(--line); border-radius: 3px; background: linear-gradient(135deg, transparent 0 7px, var(--ribbon) 7px 10px, transparent 10px), var(--surface); }
 .ft-depth { position: absolute; left: 16px; bottom: 66px; z-index: 12; width: 260px; }
 .ft-peek { position: absolute; left: 12px; right: 12px; bottom: 12px; z-index: 12; display: flex; align-items: center; gap: 10px; padding: 8px 10px 8px 8px; border-radius: var(--r-4); border: 1px solid var(--line); background: var(--surface); box-shadow: var(--shadow-3); cursor: pointer; text-align: left; min-height: 56px; }
 
@@ -576,7 +577,7 @@
 .ft-pnode__photo { width: 40px; height: 40px; flex: none; background: #F1ECE3; display: grid; place-items: center; overflow: hidden; font-family: var(--font-serif); font-size: 15px; color: #4A443B; border-radius: 2px; }
 .ft-pnode__photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .ft-pnode.is-deceased .ft-pnode__photo img { filter: grayscale(1); }
-.ft-pnode.is-deceased::after { content: ""; position: absolute; top: 0; right: 0; width: 12px; height: 12px; background: linear-gradient(225deg, #6A6256 0 50%, transparent 50%); }
+.ft-pnode.is-deceased::after { content: ""; position: absolute; top: 0; left: 0; width: 20px; height: 20px; z-index: 1; background: linear-gradient(135deg, transparent 0 40%, #2B2722 40% 56%, transparent 56%); }
 .ft-pnode.is-focus { border-width: 2px; }
 .ft-pnode.is-unknown { border-style: dashed; }
 .ft-pnode__name { font-family: var(--font-serif); font-size: 14px; line-height: 1.2; color: #1E1B17; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }

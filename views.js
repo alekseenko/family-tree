@@ -193,6 +193,8 @@
     var s = A.s, d = s.data, now = new Date().getFullYear(), phone = A.isPhone();
     var COL = phone ? 56 : 66, RULER = phone ? 46 : 60, YH = phone ? 10 : 12, HEAD = 78;
     var wrap = el('div.ft-list.ft-timeline');
+    // a click shows the person's panel straight away (in the tree the first click only centres them)
+    var open = function (id) { A.focusPerson(id); A.set({ drawerOpen: true }); };
     var span = function (v) { var r = FE.readDate(v); return r && r.y && !r.bad ? { y: r.y, rough: !!(r.approx || r.free) } : null; };
     // who can be placed: a known birth year, or at least the year they died
     var rows = [], undated = [];
@@ -222,7 +224,7 @@
       var p = r.p;
       // the bar below is the keyboard stop for each person; the name is for the mouse
       return el('button.ft-tl__who' + (p.id === s.focusId ? '.is-focus' : ''), { type: 'button', tabindex: '-1', title: FE.nameOf(p) + ', ' + FE.yearsOf(p), 'data-k': 'tl-who:' + p.id,
-        on: { click: function () { A.focusPerson(p.id); } } }, A.avatar(p), el('span.ft-tl__name', null, FE.givenOf(p)));
+        on: { click: function () { open(p.id); } } }, A.avatar(p), el('span.ft-tl__name', null, FE.givenOf(p)));
     })));
     // the year ruler down the left, pinned while scrolling sideways
     var ruler = el('div.ft-tl__ruler', { 'aria-hidden': 'true' });
@@ -251,7 +253,7 @@
       var bar = el('button.ft-tl__bar' + (r.living ? '.is-living' : '.is-deceased') + (r.fadeTop ? '.is-fadetop' : '') + (r.fadeEnd ? '.is-fadeend' : '') + (p.id === s.focusId ? '.is-focus' : ''),
         { type: 'button', style: 'left:' + (i * COL + COL / 2 - 7) + 'px;top:' + top + 'px;height:' + h + 'px', 'data-k': 'tl:' + p.id,
           'aria-label': FE.nameOf(p) + ', ' + FE.yearsOf(p), title: FE.nameOf(p) + ' · ' + FE.yearsOf(p),
-          on: { click: function () { A.focusPerson(p.id); } } }, marks);
+          on: { click: function () { open(p.id); } } }, marks);
       bar._r = r;
       body.appendChild(bar);
       return bar;
@@ -281,7 +283,7 @@
       undated.sort(FE.byName);
       wrap.appendChild(el('div.ft-tl__undated', null,
         el('p.ft-hint', null, 'Без жодного відомого року, тож тут не показано (' + undated.length + '):'),
-        el('div.ft-tl__chips', null, undated.map(function (p) { return el('button.ft-chip', { type: 'button', on: { click: function () { A.focusPerson(p.id); } } }, FE.nameOf(p)); })),
+        el('div.ft-tl__chips', null, undated.map(function (p) { return el('button.ft-chip', { type: 'button', on: { click: function () { open(p.id); } } }, FE.nameOf(p)); })),
         el('button.ft-link', { type: 'button', on: { click: function () { A.set({ listFilter: 'missing' }); A.setView('people'); } } }, 'Відкрити «Бракує дат» у списку людей')));
     }
     // on arrival: the chosen person's column and birth in view

@@ -560,7 +560,7 @@
   function captureFocus() {
     var a = document.activeElement;
     var keep = { scroll: {} };
-    ['.ft-drawer__scroll', '.ft-list', '.ft-picker', '.ft-menu'].forEach(function (sel) { var n = root.querySelector(sel); if (n) keep.scroll[sel] = n.scrollTop; });
+    ['.ft-drawer__scroll', '.ft-list', '.ft-picker', '.ft-menu'].forEach(function (sel) { var n = root.querySelector(sel); if (n) keep.scroll[sel] = [n.scrollTop, n.scrollLeft]; });
     keep.drawerFor = lastDrawerFor;
     if (a && root.contains(a) && a.getAttribute('data-k')) {
       keep.k = a.getAttribute('data-k');
@@ -573,7 +573,7 @@
   var lastDrawerFor = null;
   function restoreFocus(keep) {
     // the drawer keeps its scroll position only while it shows the same person
-    Object.keys(keep.scroll).forEach(function (sel) { var n = root.querySelector(sel); if (n && (sel !== '.ft-drawer__scroll' || keep.drawerFor === s.focusId)) n.scrollTop = keep.scroll[sel]; });
+    Object.keys(keep.scroll).forEach(function (sel) { var n = root.querySelector(sel); if (n && (sel !== '.ft-drawer__scroll' || keep.drawerFor === s.focusId)) { n.scrollTop = keep.scroll[sel][0]; n.scrollLeft = keep.scroll[sel][1]; } });
     lastDrawerFor = s.focusId;
     var req = s.focusReq;
     if (req) {

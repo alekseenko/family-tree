@@ -114,6 +114,7 @@
         x.caption = str(x.caption);
         // framing of the main photo: "x% y%", each 0–100
         if (x.pos != null && !/^(100|\d{1,2}(\.\d+)?)% (100|\d{1,2}(\.\d+)?)%$/.test(x.pos)) delete x.pos;
+        if (x.zoom != null && !(typeof x.zoom === 'number' && x.zoom > 1 && x.zoom <= 3)) delete x.zoom;
         x.id = x.id ? safeId(x.id, phIds, 'ph') : safeId('ph-' + id + '-' + (i + 1), phIds, 'ph');
       });
       if (!okSrc(p.photo) || !p.photo) p.photo = null;
@@ -923,7 +924,7 @@
           L.push('1 OBJE'); L.push('2 FILE ' + x.src);
           if (x.caption) L.push('2 TITL ' + x.caption);
           if (x.src === p.photo) L.push('2 _PRIM Y');
-          if (x.pos) L.push('2 _POSI ' + x.pos);
+          if (x.pos || x.zoom) L.push('2 _POSI ' + (x.pos || '50% 50%') + (x.zoom ? ' ' + x.zoom : ''));
         });
       });
       var REL_OUT = { bio: 'Natural', adopted: 'Adopted', step: 'Step', foster: 'Foster' };
@@ -992,7 +993,8 @@
             if (file && !/^([a-z]+:|\/|\\)/i.test(file)) {
               var phid = 'ph-' + id + '-' + (p.photos.length + 1);
               p.photos.push({ id: phid, src: file, caption: g('TITL') });
-              if (g('_POSI')) p.photos[p.photos.length - 1].pos = g('_POSI').trim();
+              var posi = g('_POSI').trim().split(/\s+/);
+              if (posi.length >= 2) { p.photos[p.photos.length - 1].pos = posi[0] + ' ' + posi[1]; if (posi[2]) p.photos[p.photos.length - 1].zoom = parseFloat(posi[2]); }
               if (/^y/i.test(g('_PRIM'))) p.photo = file;
             }
           }

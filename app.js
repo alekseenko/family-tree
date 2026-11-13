@@ -918,16 +918,22 @@
 
   // The main photo's framing ("x% y%"): which part shows when it's cropped to a square or a frame.
   // It belongs to the photo, so it comes back when that photo is made the main one again.
-  function portraitPos(p) {
+  function portraitFrame(p) {
     var ph = p.photo && (p.photos || []).find(function (x) { return x.src === p.photo; });
-    return ph && ph.pos || '';
+    return ph && (ph.pos || ph.zoom) ? { pos: ph.pos || '50% 50%', zoom: ph.zoom || 1 } : null;
+  }
+  // zoom magnifies around the anchor point, inside a box that hides what spills over
+  function frameStyle(i, pos, zoom) {
+    i.style.objectPosition = pos;
+    i.style.transformOrigin = pos;
+    i.style.transform = zoom > 1 ? 'scale(' + zoom + ')' : '';
   }
   function portrait(p, alt, fallback) {
-    var i = img(p.photo, alt, fallback), pos = portraitPos(p);
-    if (pos && i.tagName === 'IMG') i.style.objectPosition = pos;
+    var i = img(p.photo, alt, fallback), fr = portraitFrame(p);
+    if (fr && i.tagName === 'IMG') frameStyle(i, fr.pos, fr.zoom);
     return i;
   }
-  A.portrait = portrait; A.portraitPos = portraitPos;
+  A.portrait = portrait; A.frameStyle = frameStyle;
   function avatar(p, cls) {
     var a = el('span.ft-av' + (cls ? '.' + cls : '') + (p.deceased ? '.is-deceased' : ''), { 'aria-hidden': 'true' });
     a.appendChild(p.photo ? portrait(p, '', document.createTextNode(FE.initials(p))) : document.createTextNode(FE.initials(p)));
@@ -975,7 +981,7 @@
     return n;
   }
   function fillNode(n, id, p, opt) {
-    var sig = JSON.stringify([FE.nameOf(p), FE.yearsOf(p), opt.place, p.photo, portraitPos(p), opt.isRoot, opt.more, opt.canAdd, opt.isFocus, St.S.mode + St.S.perm, s.density]);
+    var sig = JSON.stringify([FE.nameOf(p), FE.yearsOf(p), opt.place, p.photo, portraitFrame(p), opt.isRoot, opt.more, opt.canAdd, opt.isFocus, St.S.mode + St.S.perm, s.density]);
     if (n._sig === sig) return;
     n._sig = sig;
     n.textContent = '';

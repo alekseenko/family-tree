@@ -634,3 +634,7 @@
 @media (forced-colors: active) {
   .ft-theme [aria-pressed="true"], .ft-theme [aria-selected="true"], .ft-theme [aria-current="true"] { outline: 2px solid Highlight; outline-offset: -2px; }
 }
+
+/* Photo thumbnails are grids (to centre the initials); a single 100% row and column gives the photo a
+   definite box, so object-fit and the framing (object-position, zoom) work exactly as in the editor. */
+.ft-card__photo, .ft-av, .ft-mount__img, .ft-pnode__photo { grid-template: 100% / 100%; }

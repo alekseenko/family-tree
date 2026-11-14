@@ -13,7 +13,7 @@ const out = path.resolve(outArg);
 // it is emptied first, so never the project itself or a folder that contains it
 if (out === root || root.startsWith(out + path.sep)) { console.error('refusing to build into ' + out); process.exit(1); }
 
-const FILES = ['index.html', 'favicon.svg', 'familytree.css', 'app.css', 'boot.js', 'family.js', 'tree-engine.js', 'ui.js', 'storage.js', 'drawer.js', 'views.js', 'app.js'];
+const FILES = ['index.html', 'favicon.svg', 'familytree.css', 'app.css', 'boot.js', 'family.js', 'tree-engine.js', 'merge.js', 'ui.js', 'storage.js', 'drawer.js', 'views.js', 'app.js'];
 const DIRS = ['photos'];
 
 fs.rmSync(out, { recursive: true, force: true });

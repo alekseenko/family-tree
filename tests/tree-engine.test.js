@@ -6,6 +6,7 @@ const path = require('path');
 const vm = require('vm');
 
 const FE = require('../tree-engine.js');
+const FM = require('../merge.js');
 const sandbox = { window: {} };
 vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../family.js'), 'utf8'), sandbox);
 const data = sandbox.window.FAMILY_DATA;
@@ -319,6 +320,59 @@ test('loops, lone-parent families, empty couples, notes formatting, date qualifi
   const p = (b) => ({ birth: { date: b }, death: { date: '' }, sex: 'u' });
   assert.deepStrictEqual(['після 1950', 'до 1930', 'між 1930 і 1935', 'весна 1945'].map((x) => FE.yearsOf(p(x))),
     ['нар. після 1950', 'нар. до 1930', 'нар. 1930–1935', 'нар. бл. 1945']);
+});
+
+test('merge: matching people, filled-in fields, conflicts, photos and families', () => {
+  const ours = clone(data);
+  const P = (id, given, surname, sex, b, extra) => Object.assign({ id, given, surname, birthName: '', nick: '', sex, birth: { date: b || '', place: '' }, death: { date: '', place: '' }, deceased: false, photo: null, photos: [], notes: '' }, extra || {});
+  // a relative's tree: Юлія's family, with Тарас and their children seen from her side
+  const theirs = { title: 'Ткаченки', rootId: 'y', meta: {}, people: {
+    y: P('y', 'Юлія', 'Ткаченко', 'f', '1981'),
+    t: P('t', 'Тарас', 'Коваленко', 'm', '1979', { birth: { date: '1979', place: 'м. Київ, Україна' }, notes: 'Записала Юлія' }),
+    o: P('o', 'Остап', 'Коваленко', 'm', '2008', { photos: [{ id: 'x', src: 'data:image/png;base64,AAAA', caption: 'Перший клас' }], photo: 'data:image/png;base64,AAAA' }),
+    z: P('z', 'Злата', 'Коваленко', 'f', '12.05.2012'),
+    i: P('i', 'Іван', 'Ткаченко', 'm', '1955'),
+    l: P('l', 'Ольга', 'Ткаченко', 'f', '1957'),
+    k: P('k', 'Катерина', 'Ткаченко', 'f', '1985') },
+    families: [
+      { id: 'a1', a: 'i', b: 'l', type: 'married', start: '', end: '', kids: [{ id: 'y', ra: 'bio', rb: 'bio' }, { id: 'k', ra: 'bio', rb: 'bio' }] },
+      { id: 'a2', a: 't', b: 'y', type: 'married', start: '2006', end: '', kids: [{ id: 'o', ra: 'bio', rb: 'bio' }, { id: 'z', ra: 'bio', rb: 'bio' }] }] };
+  const sug = FM.suggest(ours, theirs);
+  const pairs = {}; sug.forEach((m) => { pairs[m.theirs] = m.ours; });
+  assert.deepStrictEqual(pairs, { t: 'p14', y: 'p19', o: 'p22', z: 'p23' }, 'the four shared people, nobody else');
+  assert.ok(sug.find((m) => m.theirs === 'y').reasons.some((r) => /спільні/.test(r)), 'Юлія is matched through her husband and children');
+  const pl = FM.plan(ours, theirs, pairs);
+  const it = (k) => pl.items.find((x) => x.key === k);
+  assert.strictEqual(pl.newPeople.length, 3, 'her parents and sister are new');
+  assert.strictEqual(it('p:p14:birth.place').auto, 'theirs', 'the fuller place');
+  assert.strictEqual(it('p:p14:birth.date').auto, 'ours', 'our date is more exact');
+  assert.strictEqual(it('p:p23:birth.date').auto, 'theirs', 'their date is more exact');
+  assert.strictEqual(it('p:p19:surname').auto, 'ours', 'married name stays');
+  assert.deepStrictEqual([it('p:p19:birthName').a, it('p:p19:birthName').b, it('p:p19:birthName').auto], ['Савченко', 'Ткаченко', null], 'two different maiden names: the user decides');
+  assert.strictEqual(it('p:p14:notes').auto, 'theirs', 'empty notes filled in');
+  const merged = FM.apply(ours, theirs, pl, {});
+  FE.tidyFamilies(merged);
+  assert.strictEqual(Object.keys(merged.people).length, 28);
+  assert.strictEqual(merged.people.p19.birthName, 'Савченко', 'ours unless chosen');
+  assert.strictEqual(merged.people.p23.birth.date, '12.05.2012');
+  assert.strictEqual(merged.people.p22.photos.length, ours.people.p22.photos.length + 1, 'their photo is added, ours stay');
+  // Юлія now has parents and a sister; the couple's family is not duplicated
+  assert.strictEqual(FE.parentFams(merged, 'p19').length, 1);
+  assert.strictEqual(merged.families.filter((f) => [f.a, f.b].includes('p14') && [f.a, f.b].includes('p19')).length, 1);
+  assert.strictEqual(FE.siblingsOf(merged, 'p19').length, 1);
+  assert.strictEqual(FE.hasLoop(merged), false);
+  assert.ok(!Object.keys(merged.people).some((id) => !ours.people[id] && ['p14', 'p19', 'p22', 'p23'].includes(id)));
+  // a real disagreement waits for a choice; the choice decides
+  theirs.people.t.birth.date = '1978';
+  const pl2 = FM.plan(ours, theirs, pairs);
+  assert.strictEqual(pl2.items.find((x) => x.key === 'p:p14:birth.date').auto, null);
+  assert.strictEqual(FM.apply(ours, theirs, pl2, { 'p:p14:birth.date': 'theirs' }).people.p14.birth.date, '1978');
+  assert.strictEqual(FM.apply(ours, theirs, pl2, {}).people.p14.birth.date, ours.people.p14.birth.date, 'ours unless chosen');
+  // a tree with nobody in common: nothing to merge
+  const stranger = { people: { s: P('s', 'Олег', 'Іншенко', 'm', '1970') }, families: [] };
+  assert.deepStrictEqual(FM.suggest(ours, stranger), []);
+  // the same given name but other dates or sex is not a match
+  assert.deepStrictEqual(FM.suggest(ours, { people: { s: P('s', 'Тарас', 'Коваленко', 'm', '1950') }, families: [] }), []);
 });
 
 console.log(`\n${passed} tests passed`);

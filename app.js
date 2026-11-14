@@ -20,7 +20,7 @@
     screen: 'loading', fileError: '', otherTab: false,
     showLegend: false, showKeys: false, posterOpen: false, depthOpen: false,
     listSort: 'name', listDir: 1, listFilter: 'all', listQuery: '',
-    dvCollapsed: {}, notesEdit: false, notesDraft: '', dragOver: false, captionEdit: null, frameEdit: null,
+    dvCollapsed: {}, notesEdit: false, notesDraft: '', dragOver: false, captionEdit: null, frameEdit: null, merge: null,
     pulseId: null, upGen: 3, downGen: 3, sibFamilies: false,
     posterUp: 3, posterDown: 2, posterSibs: true, posterPhotos: true,
     first: { name: '', sex: 'u', year: '' }, sampleNote: pref('sampleNote', '1') === '1',
@@ -505,6 +505,48 @@
     });
   }
   A.keepCopy = keepCopy;
+  /* ---------------------------------------------------------------- merging another tree in */
+  // Another relative's tree: read it, propose who is the same person (FamilyMerge.suggest), let the
+  // user confirm the pairs and decide every disagreement, then merge in one undoable step.
+  function mergeFrom(kind) {
+    var load = function (src) {
+      set({ merge: { step: 'working', text: 'Читаю дерево…' } });
+      St.readOther(src).then(function (r) {
+        var sug = FamilyMerge.suggest(s.data, r.data), pairs = {};
+        sug.forEach(function (m) { pairs[m.theirs] = m.ours; });
+        set({ merge: { step: 'match', theirs: r.data, name: r.name, lost: r.lost, sug: sug, pairs: pairs, choices: {} } });
+      }, function (e) {
+        set({ merge: { step: 'source', err: 'Не вдалося прочитати: ' + (e instanceof SyntaxError ? 'файл пошкоджено або це не family.js чи GEDCOM' : e && e.message || e) } });
+      });
+    };
+    if (kind === 'folder') {
+      window.showDirectoryPicker({ id: 'family-merge', mode: 'read' }).then(load, function (e) { if (e && e.name !== 'AbortError') set({ merge: { step: 'source', err: String(e.message || e) } }); });
+      return;
+    }
+    var inp = el('input', { type: 'file', accept: '.js,.json,.ged', style: 'display:none' });
+    inp.addEventListener('change', function () { var f = inp.files[0]; inp.remove(); if (f) load(f); });
+    document.body.appendChild(inp);
+    inp.click();
+  }
+  function mergePlan() { var m = s.merge; return FamilyMerge.plan(s.data, m.theirs, m.pairs); }
+  function mergeApply() {
+    var m = s.merge, pl = mergePlan(), merged = FamilyMerge.apply(s.data, m.theirs, pl, m.choices);
+    FE.tidyFamilies(merged);
+    if (FE.hasLoop(merged) && !FE.hasLoop(s.data)) { set({ merge: Object.assign({}, m, { err: 'Після об’єднання хтось став би власним предком — перевірте пари на першому кроці.' }) }); return; }
+    set({ merge: Object.assign({}, m, { step: 'working', text: 'Об’єдную…' }) });
+    // the tree as it was goes to backups/ first (in a folder); photos become files or browser copies
+    keepCopy().then(function (kept) {
+      return St.adoptPhotos(merged).then(function (d) {
+        // a photo both trees had may now be the very same file
+        Object.keys(d.people).forEach(function (id) { var seen = {}; d.people[id].photos = d.people[id].photos.filter(function (x) { return seen[x.src] ? false : (seen[x.src] = true); }); });
+        commit(function (draft) { draft.people = d.people; draft.families = d.families; }, {
+          toast: 'Об’єднано з «' + m.name + '»: додано ' + count(pl.newPeople.length, 'людину', 'людини', 'людей') + (kept ? '. Попереднє дерево — в backups/' + kept : '') + '.',
+          state: { merge: null }
+        });
+      });
+    }).catch(function (e) { set({ merge: Object.assign({}, m, { step: 'review', err: 'Не вдалося: ' + (e && e.message || e) }) }); });
+  }
+  A.mergeFrom = mergeFrom; A.mergePlan = mergePlan; A.mergeApply = mergeApply;
   function emptyData() {
     return { title: 'Родинний архів', rootId: null, meta: { version: 1, revision: 0, sample: false, savedAt: '' }, people: {}, families: [] };
   }
@@ -562,7 +604,7 @@
   function captureFocus() {
     var a = document.activeElement;
     var keep = { scroll: {} };
-    ['.ft-drawer__scroll', '.ft-list', '.ft-picker', '.ft-menu'].forEach(function (sel) { var n = root.querySelector(sel); if (n) keep.scroll[sel] = [n.scrollTop, n.scrollLeft]; });
+    ['.ft-drawer__scroll', '.ft-list', '.ft-picker', '.ft-menu', '.ft-merge'].forEach(function (sel) { var n = root.querySelector(sel); if (n) keep.scroll[sel] = [n.scrollTop, n.scrollLeft]; });
     keep.drawerFor = lastDrawerFor;
     if (a && root.contains(a) && a.getAttribute('data-k')) {
       keep.k = a.getAttribute('data-k');
@@ -810,6 +852,7 @@
       m.appendChild(item('download', 'Завантажити family.js', download));
       m.appendChild(item('download', 'Експорт GEDCOM (.ged)', exportGed));
       m.appendChild(item('upload', 'Імпорт family.js або GEDCOM…', importFile));
+      m.appendChild(item('tree', 'Об’єднати з іншим деревом…', function () { set({ menuOpen: false, merge: { step: 'source' } }); }));
       m.appendChild(item('backup', 'Резервна копія', backup, folder ? 'у backups/' : 'файлом'));
     } else {
       if (sample && S.fsSupported && !viewOnlyScreen()) m.appendChild(item('folder', 'Створити або відкрити своє дерево…', connect, null, 'is-accent'));
@@ -1405,6 +1448,7 @@
       return true;
     }
     if (s.posterOpen) { set({ posterOpen: false, focusReq: 'card:' + s.focusId }); return true; }
+    if (s.merge && s.merge.step !== 'working') { set({ merge: null, focusReq: 'menu' }); return true; }
     if (s.frameEdit) { set({ frameEdit: null, focusReq: 'frame' }); return true; }
     if (s.captionEdit) { set({ captionEdit: null }); return true; }
     if (s.relEdit) { set({ relEdit: null, relConfirm: false }); return true; }
@@ -1456,7 +1500,7 @@
     var appUndo = !typing || (t.getAttribute && /^ed-/.test(t.getAttribute('data-k') || ''));
     if (mod && code === 'KeyZ' && appUndo) { e.preventDefault(); if (e.shiftKey) redo(); else undo(); return; }
     if (mod && code === 'KeyY' && appUndo) { e.preventDefault(); redo(); return; }
-    if (typing || mod || e.altKey || s.screen !== 'app' || s.confirm || s.showKeys || s.posterOpen || s.lightbox) return;
+    if (typing || mod || e.altKey || s.screen !== 'app' || s.confirm || s.showKeys || s.posterOpen || s.lightbox || s.merge) return;
     var inPanel = t.closest && t.closest('.ft-drawer, .ft-list, .ft-pop, .ft-menu, .ft-posterwrap');
     var noEdit = ro(), fid = s.focusId, tree = s.view === 'tree';
     var act = function (fn) { e.preventDefault(); fn(); };

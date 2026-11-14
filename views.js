@@ -308,6 +308,127 @@
     if (s.showKeys) slot.appendChild(keySheet(A));
     if (s.lightbox) slot.appendChild(lightbox(A));
     if (s.posterOpen && s.screen === 'app' && s.data) slot.appendChild(poster(A));
+    if (s.merge && s.screen === 'app' && s.data) slot.appendChild(mergeScreen(A));
+  }
+
+  /* ---------------------------------------------------------------- Merging another tree in */
+  // Three steps on one full screen: where the other tree is, who is the same person in both, and a
+  // review of every change (conflicts to decide, what was settled automatically, who is added).
+  var REL_WORD = { bio: 'рідна', adopted: 'усиновлення', step: 'нерідна', foster: 'опіка' };
+  var UNION_WORD = { married: 'шлюб', partner: 'партнери', divorced: 'розлучені', none: 'спільні діти' };
+  function mergeValue(it, v) {
+    if (it.field === 'sex') return FamilyMerge.SEX[v] || v;
+    if (it.field === 'deceased') return v ? 'так' : 'ні';
+    if (it.field === 'type') return UNION_WORD[v] || v;
+    if (it.field === 'kid') return String(v).split('/').map(function (r) { return REL_WORD[r] || r; }).join(' / ');
+    if (/date$|^start$|^end$/.test(it.field)) return FE.fmtDate(v) || '—';
+    var t = String(v == null ? '' : v).trim();
+    return t ? (t.length > 140 ? t.slice(0, 140) + '…' : t) : '—';
+  }
+  function mergeScreen(A) {
+    var s = A.s, m = s.merge, d = s.data;
+    var upd = function (patch) { A.set({ merge: Object.assign({}, s.merge, patch) }); };
+    var close = function () { A.set({ merge: null, focusReq: 'menu' }); };
+    var body = el('div.ft-merge__body');
+    var head = el('div.ft-merge__head', null,
+      el('h2.ft-dialog__title', { id: 'ft-merge-title' }, m.name ? 'Об’єднання з «' + m.name + '»' : 'Об’єднати з іншим деревом'),
+      m.step === 'working' ? null : A.closeBtn(close, 'Скасувати об’єднання (Esc)', 'merge-close'));
+    var foot = el('div.ft-merge__foot');
+    var wrap = el('div.ft-merge', { role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'ft-merge-title' }, el('div.ft-merge__inner', null, head, body, foot));
+    var err = m.err ? el('p.ft-err', { role: 'alert' }, m.err) : null;
+    var person = function (p, tree) {
+      return el('span.ft-merge__who', null, A.avatar(p), el('span', null, el('span.ft-merge__name', null, FE.nameOf(p)), el('span.ft-merge__meta', null, FE.yearsOf(p) + (tree && p.birth.place ? ' · ' + p.birth.place : ''))));
+    };
+
+    if (m.step === 'working') { body.appendChild(el('p.ft-merge__lede', { role: 'status' }, m.text || 'Зачекайте…')); return wrap; }
+
+    if (m.step === 'source') {
+      body.appendChild(el('p.ft-merge__lede', null, 'Дерево родича додасться до вашого. Спершу ви позначите людей, які є в обох деревах, потім побачите всі зміни й розв’яжете розбіжності. Нічого не зміниться, доки ви не натиснете «Об’єднати».'));
+      body.appendChild(el('div.ft-choices', null,
+        St.S.fsSupported ? el('button.ft-choice.is-primary', { type: 'button', 'data-k': 'merge-folder', on: { click: function () { A.mergeFrom('folder'); } } },
+          el('span.ft-choice__icon', null, icon('folder', 'ft-ico--lg')), el('span', null, el('span.ft-choice__title', null, 'Папка з деревом родича'), el('span.ft-choice__sub', null, 'Найкраще: разом із family.js прийдуть і всі фото з photos/.')), icon('next', 'ft-choice__arrow')) : null,
+        el('button.ft-choice' + (St.S.fsSupported ? '' : '.is-primary'), { type: 'button', 'data-k': 'merge-file', on: { click: function () { A.mergeFrom('file'); } } },
+          el('span.ft-choice__icon', null, icon('upload', 'ft-ico--lg')), el('span', null, el('span.ft-choice__title', null, 'Файл family.js або GEDCOM'), el('span.ft-choice__sub', null, 'Фото прийдуть, якщо файл зроблено через ☰ → «Завантажити family.js».')), icon('next', 'ft-choice__arrow'))));
+      if (err) body.appendChild(err);
+      foot.appendChild(el('button.ft-btn', { type: 'button', on: { click: close } }, 'Скасувати'));
+      return wrap;
+    }
+
+    var T = m.theirs, ids = Object.keys(T.people), sugBy = {};
+    m.sug.forEach(function (x) { sugBy[x.theirs] = x; });
+    var oursSorted = Object.keys(d.people).map(function (id) { return d.people[id]; }).sort(FE.byName);
+    var paired = Object.keys(m.pairs).filter(function (t) { return m.pairs[t]; });
+    // one person here can stand for only one person there
+    var dupes = {}; paired.forEach(function (t) { var o = m.pairs[t]; dupes[o] = (dupes[o] || 0) + 1; });
+    var clash = Object.keys(dupes).filter(function (o) { return dupes[o] > 1; });
+
+    if (m.step === 'match') {
+      body.appendChild(el('p.ft-merge__lede', null, 'Хто з дерева «' + m.name + '» уже є у вашому? Ми підібрали пари за іменами, датами й родичами — перевірте їх. Решту людей буде додано як нових.'));
+      body.appendChild(el('p.ft-merge__stats', null, count(ids.length, 'людина', 'людини', 'людей') + ' у їхньому дереві · ' + count(paired.length, 'спільна', 'спільні', 'спільних') +
+        (m.lost ? ' · ' + count(m.lost, 'фото', 'фото', 'фото') + ' не вдалося взяти (оберіть папку родича, а не файл)' : '')));
+      // suggested pairs first, then everyone else by name
+      ids.sort(function (x, y) { return (sugBy[y] ? sugBy[y].score : 0) - (sugBy[x] ? sugBy[x].score : 0) || FE.byName(T.people[x], T.people[y]); });
+      body.appendChild(el('div.ft-merge__list', { role: 'list' }, ids.map(function (t) {
+        var q = T.people[t], sg = sugBy[t], cur = m.pairs[t] || '';
+        var sel = el('select.ft-input.ft-merge__select', { 'aria-label': 'Хто це у вашому дереві: ' + FE.nameOf(q), 'data-k': 'mpair:' + t,
+          on: { change: function (e) { var pr = Object.assign({}, s.merge.pairs); if (e.target.value) pr[t] = e.target.value; else delete pr[t]; upd({ pairs: pr, err: '' }); } } },
+          [el('option', { value: '' }, '— нова людина в дереві —')].concat(oursSorted.map(function (p) {
+            var o = el('option', { value: p.id }, FE.nameOf(p) + (FE.yearsOf(p) !== 'Дати невідомі' ? ' · ' + FE.yearsOf(p) : ''));
+            if (p.id === cur) o.selected = true;
+            return o;
+          })));
+        return el('div.ft-merge__row' + (cur ? '.is-paired' : '') + (cur && clash.indexOf(cur) >= 0 ? '.is-bad' : ''), { role: 'listitem' },
+          person(q, true), el('span.ft-merge__arrow', { 'aria-hidden': 'true' }, '→'), sel,
+          sg && cur === sg.ours ? el('span.ft-merge__why', null, el('span.ft-chip' + (sg.sure ? '.ft-chip--accent' : '.ft-chip--sepia'), null, sg.sure ? 'майже напевно' : 'перевірте'), ' ' + sg.reasons.join(', ')) : null);
+      })));
+      var stop = !paired.length ? 'Немає жодної спільної людини — без неї дерева не з’єднати, тож нічого не зміниться. Виберіть хоча б одну пару або скасуйте.'
+        : clash.length ? 'Одну людину з вашого дерева вибрано для кількох людей із їхнього: ' + clash.map(function (o) { return FE.nameOf(d.people[o]); }).join(', ') + '.' : '';
+      if (stop) foot.appendChild(el('p.ft-merge__stop', { role: 'alert' }, stop));
+      foot.appendChild(el('button.ft-btn', { type: 'button', on: { click: close } }, 'Скасувати'));
+      foot.appendChild(el('button.ft-btn.ft-btn--primary', { type: 'button', 'data-k': 'merge-next', disabled: !!stop, on: { click: function () { upd({ step: 'review', err: '' }); } } }, 'Далі: перевірити зміни'));
+      return wrap;
+    }
+
+    // review
+    var pl = A.mergePlan(), conflicts = pl.items.filter(function (i) { return !i.auto; }), autos = pl.items.filter(function (i) { return i.auto; });
+    var whoOf = function (it) { if (it.who) return FE.nameOf(d.people[it.who]); var f = d.families.find(function (x) { return x.id === it.fam; }); return f ? [f.a, f.b].filter(Boolean).map(function (x) { return FE.givenOf(d.people[x]); }).join(' і ') : ''; };
+    var choose = function (it, v) { var c = Object.assign({}, s.merge.choices); c[it.key] = v; upd({ choices: c }); };
+    var famAdds = pl.families.filter(function (e) { return e.add; }).length, kidAdds = pl.families.reduce(function (a, e) { return a + (e.add ? 0 : e.kids.length); }, 0);
+    var photoAdds = pl.photos.reduce(function (a, x) { return a + x.add.length; }, 0);
+    body.appendChild(el('p.ft-merge__stats', null, [
+      'Додасться ' + count(pl.newPeople.length, 'людина', 'людини', 'людей'),
+      famAdds ? count(famAdds, 'нова родина', 'нові родини', 'нових родин') : '',
+      kidAdds ? count(kidAdds, 'зв’язок дитини', 'зв’язки дітей', 'зв’язків дітей') : '',
+      photoAdds ? count(photoAdds, 'фото', 'фото', 'фото') : '',
+      count(autos.length, 'поле вирішено автоматично', 'поля вирішено автоматично', 'полів вирішено автоматично'),
+      count(conflicts.length, 'розбіжність', 'розбіжності', 'розбіжностей')].filter(Boolean).join(' · ')));
+    var section = function (title, n, items) { return n ? el('section.ft-merge__sec', null, el('h3.ft-merge__h', null, title + ' (' + n + ')'), items) : null; };
+    var option = function (it, which, label, value) {
+      var cur = FamilyMerge.pick(it, s.merge.choices);
+      return el('button.ft-merge__opt', { type: 'button', 'aria-pressed': String(cur === which), 'data-k': 'mopt:' + it.key + ':' + which, on: { click: function () { choose(it, which); } } },
+        el('span.ft-merge__optlabel', null, label), el('span.ft-merge__optval', null, value));
+    };
+    body.appendChild(section('Розбіжності — виберіть, що правильно', conflicts.length, conflicts.map(function (it) {
+      return el('div.ft-merge__card', null, el('p.ft-merge__what', null, el('b', null, whoOf(it)), ' · ' + it.label),
+        el('div.ft-merge__opts', { role: 'group', 'aria-label': whoOf(it) + ': ' + it.label },
+          option(it, 'ours', 'У вашому дереві', mergeValue(it, it.a)), option(it, 'theirs', 'У дереві «' + m.name + '»', mergeValue(it, it.b)),
+          it.both ? option(it, 'both', 'Обидва разом', 'Ваші нотатки, потім їхні') : null));
+    })));
+    body.appendChild(section('Вирішено автоматично', autos.length, el('div.ft-merge__autos', null, autos.map(function (it) {
+      var cur = FamilyMerge.pick(it, s.merge.choices), flip = cur === it.auto ? (it.auto === 'ours' ? 'theirs' : 'ours') : it.auto;
+      var val = cur === 'theirs' ? it.b : it.a;
+      return el('div.ft-merge__auto', null,
+        el('span', null, el('b', null, whoOf(it)), ' · ' + it.label + ': ', el('span.ft-merge__val', null, mergeValue(it, val)), cur === it.auto && it.why ? el('span.ft-merge__meta', null, ' — ' + it.why) : el('span.ft-merge__meta', null, ' — змінено вами')),
+        el('button.ft-link', { type: 'button', on: { click: function () { choose(it, flip); } } }, cur === it.auto ? 'Узяти ' + (flip === 'ours' ? 'ваше' : 'їхнє') + ': ' + mergeValue(it, flip === 'ours' ? it.a : it.b) : 'Повернути'));
+    }))));
+    body.appendChild(section('Нові люди', pl.newPeople.length, el('div.ft-merge__people', null, pl.newPeople.map(function (t) { return person(T.people[t], true); }))));
+    body.appendChild(section('Фото', photoAdds, el('p.ft-hint', null, 'Усі фото з обох дерев залишаться; однакові файли не дублюватимуться. Головне фото — ваше, якщо воно є. ' +
+      pl.photos.map(function (x) { return FE.givenOf(d.people[x.who]) + ': +' + x.add.length; }).join(', '))));
+    if (err) body.appendChild(err);
+    foot.appendChild(el('p.ft-hint', null, (St.S.mode === 'folder' ? 'Перед об’єднанням поточне дерево збережеться в backups/. ' : '') + 'Об’єднання можна скасувати одразу після (⌘Z / Ctrl+Z).'));
+    foot.appendChild(el('button.ft-btn', { type: 'button', on: { click: function () { upd({ step: 'match', err: '' }); } } }, 'Назад'));
+    foot.appendChild(el('button.ft-btn.ft-btn--primary', { type: 'button', 'data-k': 'merge-apply', on: { click: A.mergeApply } }, 'Об’єднати'));
+    return wrap;
   }
 
   function welcome(A) {

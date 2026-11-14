@@ -191,3 +191,5 @@ html[data-theme="dark"], html[data-theme="dark"] body { background: #191714; }
 .ft-app.is-tablet:not(.is-phone) .ft-topbar { gap: 8px; }
 .ft-scope__hidden { color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .ft-scope__hidden .ft-link { font-size: inherit; }
+/* the bar's right padding is sized for a button at its end; text there needs more room */
+.ft-scope > .ft-scope__hidden:last-child { margin-right: 9px; }

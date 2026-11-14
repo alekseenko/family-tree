@@ -852,6 +852,38 @@
       });
     },
 
+    // Another tree to merge in, from a file (family.js or GEDCOM) or a whole folder. Photos must come
+    // along as data: their photos/… paths would otherwise point at files in *this* tree's folder.
+    // Resolves { data, name, lost } (lost: photos that couldn't be read).
+    readOther: function (src) {
+      var lost = 0;
+      var keepEmbedded = function (d) {
+        Object.keys(d.people).forEach(function (id) {
+          var p = d.people[id];
+          p.photos = p.photos.filter(function (x) { var ok = /^data:image\//.test(x.src); if (!ok) lost++; return ok; });
+          if (p.photo && !p.photos.some(function (x) { return x.src === p.photo; })) p.photo = p.photos.length ? p.photos[0].src : null;
+        });
+        return d;
+      };
+      if (src.kind === 'directory') {
+        return readFolder(src).then(function (fr) {
+          if (!fr) throw new Error('у папці «' + src.name + '» немає family.js');
+          var d = fr.data, jobs = [];
+          Object.keys(d.people).forEach(function (id) {
+            d.people[id].photos.forEach(function (x) {
+              if (/^(data|idb):/.test(x.src)) return;
+              jobs.push(readPath(src, x.src).then(function (f) { return blobToDataURL(typed(f, x.src)); }).then(function (u) {
+                if (d.people[id].photo === x.src) d.people[id].photo = u;
+                x.src = u;
+              }, function () { /* missing: dropped below */ }));
+            });
+          });
+          return Promise.all(jobs).then(function () { return { data: keepEmbedded(d), name: src.name, lost: lost }; });
+        });
+      }
+      return Storage.readImport(src).then(function (d) { return { data: keepEmbedded(d), name: src.name, lost: lost }; });
+    },
+
     openBrowserCopy: function () { return kvGet('data'); }
   };
 

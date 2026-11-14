@@ -59,7 +59,9 @@
     if (!s.data) return { nodes: {}, segs: [], labels: [], tags: [], ghosts: [], hidden: {}, bounds: null };
     var key = [s.rev, s.focusId, s.density, s.upGen, s.downGen, s.sibFamilies ? 1 : 0].join('|');
     if (layoutCache && layoutCache.key === key) return layoutCache.val;
-    var val = FE.layoutTree(s.data, s.focusId, D(), { upGen: s.upGen, downGen: s.downGen, sibFamilies: s.sibFamilies, ghosts: true });
+    // every generation both ways with brothers' and sisters' families: side branches come too (aunts, cousins…)
+    var all = s.upGen === ALL && s.downGen === ALL && s.sibFamilies;
+    var val = FE.layoutTree(s.data, s.focusId, D(), { upGen: s.upGen, downGen: s.downGen, sibFamilies: s.sibFamilies, ghosts: true, collateral: all });
     layoutCache = { key: key, val: val };
     return val;
   }
@@ -1126,19 +1128,29 @@
   // The tree only draws the focus person's lines, so say how much is shown and how to get back.
   function scopeGroup(L) {
     var shown = Object.keys(L.nodes).length, total = Object.keys(s.data.people).length, rootId = s.data.rootId;
-    var away = rootId && s.focusId !== rootId;
+    var away = rootId && s.focusId !== rootId, all = s.upGen === ALL && s.downGen === ALL && s.sibFamilies;
     if (shown >= total && !away) return null;
     return el('div.ft-toolgroup.ft-scope', { role: 'status', title: shown < total ? 'Картки з «+N» мають ще родичів — виберіть, щоб розгорнути' : null },
       el('span.ft-scope__text', null, 'Показано ' + shown + ' з ' + total),
       shown < total && !(s.upGen === ALL && s.downGen === ALL && s.sibFamilies) ? el('button.ft-btn.ft-btn--sm', { type: 'button', 'data-k': 'scope-all', title: 'Усі покоління й гілки, щоб у полі зору було якнайбільше людей (A)', on: { click: showAll } }, icon('fit', 'ft-ico--sm'), 'Показати всіх') : null,
+      // everyone the tree can reach is drawn; the few it can't (a son-in-law's parents…) are named here
+      shown < total && all ? hiddenPeople(L) : null,
       away ? el('button.ft-btn.ft-btn--sm', { type: 'button', 'data-k': 'scope-home', title: 'До головної особи: ' + FE.nameOf(P(rootId)), on: { click: goRoot } },
         icon('home', 'ft-ico--sm'), 'До головної', el('kbd.ft-kbd', null, 'Esc')) : null);
+  }
+  function hiddenPeople(L) {
+    var miss = Object.keys(s.data.people).filter(function (id) { return !L.nodes[id]; }).map(P).sort(FE.byName);
+    var names = miss.slice(0, 3).map(function (p) {
+      return el('button.ft-link.ft-scope__who', { type: 'button', title: 'Показати дерево від: ' + FE.nameOf(p), on: { click: function () { focusPerson(p.id, { noOpen: true }); } } }, FE.givenOf(p));
+    });
+    return el('span.ft-scope__hidden', null, 'не видно: ', names.reduce(function (acc, b, i) { return acc.concat(i ? [', ', b] : [b]); }, []),
+      miss.length > 3 ? [' і ', el('button.ft-link', { type: 'button', on: { click: function () { set({ listFilter: 'all', listQuery: '' }); setView('people'); } } }, 'ще ' + (miss.length - 3))] : null);
   }
   // Show everyone: every generation and branch, centred on whichever of this person and their
   // ancestors brings the most people into one view, then fit it to the screen.
   var ALL = 99;
   function showAll() {
-    var d = s.data, opt = { upGen: ALL, downGen: ALL, sibFamilies: true, ghosts: false };
+    var d = s.data, opt = { upGen: ALL, downGen: ALL, sibFamilies: true, ghosts: false, collateral: true };
     var seen = {}, queue = [s.focusId], best = null;
     while (queue.length) {
       var id = queue.shift();

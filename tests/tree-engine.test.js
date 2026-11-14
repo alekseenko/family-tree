@@ -45,6 +45,21 @@ test('no two cards overlap, for every focus person and option set', () => {
   }
 });
 
+test('show everyone brings side branches (aunts, cousins, ancestors\' other marriages) without overlaps', () => {
+  for (const dimsName of ['compact', 'expanded']) {
+    const D = FE.DIMS[dimsName];
+    for (const id of Object.keys(data.people)) {
+      const opt = { upGen: 99, downGen: 99, sibFamilies: true, ghosts: true };
+      const plain = FE.layoutTree(data, id, D, opt), all = FE.layoutTree(data, id, D, Object.assign({ collateral: true }, opt));
+      assert.deepStrictEqual(rowOverlaps(all, D), [], `${dimsName} focus=${id}`);
+      assert.ok(Object.keys(all.nodes).length >= Object.keys(plain.nodes).length, `never fewer: focus=${id}`);
+    }
+  }
+  // from the youngest generation everyone in the sample is reachable
+  const best = Math.max(...Object.keys(data.people).map((id) => Object.keys(FE.layoutTree(data, id, FE.DIMS.compact, { upGen: 99, downGen: 99, sibFamilies: true, collateral: true }).nodes).length));
+  assert.strictEqual(best, Object.keys(data.people).length);
+});
+
 test('Taras view: remarriage, half/step siblings, ancestors, hidden counts', () => {
   const L = FE.layoutTree(data, 'p14', FE.DIMS.compact, { upGen: 3, downGen: 3, sibFamilies: false, ghosts: true });
   const row = (r) => Object.keys(L.nodes).filter((id) => L.nodes[id].row === r).sort((a, b) => L.nodes[a].x - L.nodes[b].x);

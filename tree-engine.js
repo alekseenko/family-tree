@@ -636,7 +636,7 @@
        bounds: { minX, minY, maxX, maxY } | null
      }                                                                                   */
   function layoutTree(data, focusId, D, opt) {
-    var P = data.people;
+    var P = data.people, ALL_GEN = 99;
     var out = { nodes: {}, segs: [], labels: [], tags: [], ghosts: [], hidden: {}, bounds: null };
     if (!focusId || !P[focusId]) return out;
     var placed = {};
@@ -835,6 +835,69 @@
       });
     }
 
+    // "Show everyone": each ancestor couple's other children (aunts, uncles, great-aunts…) come too, with
+    // their partners and descendants, laid out to the outside of the tree on that side. Closest
+    // generation first, so nearer relatives sit nearer the middle.
+    function addCollaterals(bl, baseRow, side) {
+      // the first free x on this side for a unit whose top row is `top`
+      var spot = function (u, top, near) {
+        var ext = {};
+        Object.keys(out.nodes).forEach(function (id) {
+          var n = out.nodes[id], e = ext[n.row];
+          ext[n.row] = e ? [Math.min(e[0], n.x), Math.max(e[1], n.x + D.cw)] : [n.x, n.x + D.cw];
+        });
+        var left = null;
+        Object.keys(u.rows).forEach(function (dd) {
+          var e = ext[top + +dd]; if (!e) return;
+          var c = side < 0 ? e[0] - D.gg - u.rows[dd][1] : e[1] + D.gg - u.rows[dd][0];
+          left = left == null ? c : side < 0 ? Math.min(left, c) : Math.max(left, c);
+        });
+        return left != null ? left : side < 0 ? near - D.gg - u.w : near + D.gg;
+      };
+      var links = bl.b.links.slice().sort(function (x, y) { return y.row - x.row; });
+      links.forEach(function (l) {
+        var f = l.fam, r = baseRow + l.row;
+        var na = f.a && out.nodes[f.a], nb = f.b && out.nodes[f.b];
+        if (!na && !nb) return;
+        var sx = na && nb ? (na.x + nb.x) / 2 + D.cw / 2 : (na || nb).x + D.cw / 2;
+        var busY = rowY(r) + D.ch + D.rg / 2;
+        f.kids.filter(function (k) { return P[k.id] && !has(k.id); }).forEach(function (k) {
+          var u = personUnit(k.id, ALL_GEN, true), left = spot(u, r + 1, sx);
+          flatten(u, left, r + 1);
+          var kx = left + u.ax, rel = kidRel(f, k);
+          H(sx, kx, busY, 'solid', '');
+          V(kx, busY, rowY(r + 1), relStyle(rel), '');
+          if (rel !== 'bio') out.tags.push({ x: kx + 7, y: rowY(r + 1) - 14, text: relTag(rel), rel: rel });
+        });
+        // the couple's other marriages: the other partner beside them, joined by a line over the cards,
+        // their children (half-siblings of the line) below that partner
+        [f.a, f.b].forEach(function (x) {
+          if (!x || !out.nodes[x]) return;
+          fams(x).forEach(function (g) {
+            if (g.id === f.id) return;
+            var o = other(g, x), xc = out.nodes[x].x + D.cw / 2;
+            var u = o && P[o] && !has(o) ? personUnit(o, ALL_GEN, true) : null;
+            if (u) {
+              var left = spot(u, r, xc);
+              flatten(u, left, r);
+              var oc = out.nodes[o].x + D.cw / 2, ty = rowY(r) - 16, st = unionStyle(g), text = unionShort(g);
+              V(xc, ty, rowY(r), st.style, st.tone); H(xc, oc, ty, st.style, st.tone); V(oc, ty, rowY(r), st.style, st.tone);
+              if (text) out.labels.push({ x: (xc + oc) / 2, y: ty, text: text, cls: g.type === 'divorced' ? 'is-divorced' : '' });
+              return;
+            }
+            // no other partner (or already drawn): the children hang from this ancestor
+            var by = rowY(r) + D.ch + D.rg * 0.7;
+            g.kids.filter(function (k) { return P[k.id] && !has(k.id); }).forEach(function (k) {
+              var ku = personUnit(k.id, ALL_GEN, true), kl = spot(ku, r + 1, xc);
+              flatten(ku, kl, r + 1);
+              var kx = kl + ku.ax, rel = kidRel(g, k);
+              V(xc, rowY(r) + D.ch, by, 'solid', ''); H(xc, kx, by, 'solid', ''); V(kx, by, rowY(r + 1), relStyle(rel), '');
+            });
+          });
+        });
+      });
+    }
+
     var pf = opt.upGen > 0 ? primaryParentFam(data, focusId) : null;
     if (pf && P[pf.a]) {
       var P1 = pf.a, P2 = pf.b && P[pf.b] ? pf.b : null;
@@ -882,6 +945,7 @@
         if (need > 0) { blocks[0].shift -= need / 2; blocks[1].shift += need / 2; }
       }
       blocks.forEach(function (bl) { placePed(bl, -1); });
+      if (opt.collateral) blocks.forEach(function (bl) { addCollaterals(bl, -1, bl.pid === P1 ? -1 : 1); });
       if (opt.ghosts && !P2) out.ghosts.push({ x: out.nodes[P1].x + D.cw + D.cg, y: rowY(-1), label: 'Додати другого з батьків' });
     } else {
       flatten(personUnit(focusId, opt.downGen, true), 0, 0);

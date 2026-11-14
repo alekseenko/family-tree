@@ -61,6 +61,34 @@ test('show everyone brings side branches (aunts, cousins, ancestors\' other marr
   assert.strictEqual(best, Object.keys(data.people).length);
 });
 
+test('show everyone: a grandparent\'s other partner sits right beside them, no line over the cards', () => {
+  // me ← mum + dad; mum ← gm + gf; gm and gf each married someone else too, with a child
+  const p = (id, sex) => ({ id, given: id, sex, birth: {}, death: {}, photos: [] });
+  const d = {
+    people: Object.fromEntries([['me', 'm'], ['mum', 'f'], ['dad', 'm'], ['gm', 'f'], ['gf', 'm'], ['x', 'm'], ['y', 'f'], ['hx', 'f'], ['hy', 'm']].map(([id, s]) => [id, p(id, s)])),
+    families: [
+      { id: 'f1', a: 'mum', b: 'dad', type: 'married', kids: [{ id: 'me', rel: 'bio' }] },
+      { id: 'f2', a: 'gm', b: 'gf', type: 'divorced', kids: [{ id: 'mum', rel: 'bio' }] },
+      { id: 'f3', a: 'gm', b: 'x', type: 'married', start: '1984', kids: [{ id: 'hx', rel: 'bio' }] },
+      { id: 'f4', a: 'gf', b: 'y', type: 'married', kids: [{ id: 'hy', rel: 'bio' }] }
+    ]
+  };
+  for (const dimsName of ['compact', 'expanded']) {
+    const D = FE.DIMS[dimsName];
+    const L = FE.layoutTree(d, 'me', D, { upGen: 99, downGen: 99, sibFamilies: true, collateral: true });
+    const n = L.nodes;
+    assert.strictEqual(Object.keys(n).length, 9, dimsName);
+    assert.strictEqual(n.x.row, n.gm.row);
+    assert.strictEqual(n.gm.x - n.x.x, D.cw + D.cg, `${dimsName}: gm's other husband to her left`);
+    assert.strictEqual(n.y.x - n.gf.x, D.cw + D.cg, `${dimsName}: gf's other wife to his right`);
+    assert.deepStrictEqual(rowOverlaps(L, D), [], dimsName);
+    // every marriage line runs at mid-card height between neighbours, none over the tops
+    const top = L.segs.filter((s) => s.k === 'h' && Object.values(n).some((c) => Math.abs(s.y - (c.y - 16)) < 1));
+    assert.deepStrictEqual(top, [], `${dimsName}: no brackets`);
+    assert.ok(L.labels.some((l) => l.text === 'шл. 1984' && l.y === n.gm.y + D.ch / 2), dimsName);
+  }
+});
+
 test('Taras view: remarriage, half/step siblings, ancestors, hidden counts', () => {
   const L = FE.layoutTree(data, 'p14', FE.DIMS.compact, { upGen: 3, downGen: 3, sibFamilies: false, ghosts: true });
   const row = (r) => Object.keys(L.nodes).filter((id) => L.nodes[id].row === r).sort((a, b) => L.nodes[a].x - L.nodes[b].x);

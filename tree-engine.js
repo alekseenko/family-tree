@@ -789,7 +789,24 @@
       });
     }
     // Pedigree block for the ancestors of pid (pid itself at row 0, not included in items).
-    function ped(pid, depth) {
+    // With side branches on, an ancestor who married someone else too gets room for that partner
+    // beside them, on the outer side (`side`: -1 left parent, 1 right parent), away from the couple.
+    function ped(pid, depth, side, via) {
+      var blk = pedBlock(pid, depth);
+      if (!opt.collateral || !side) return blk;
+      var more = fams(pid).some(function (g) { var o = other(g, pid); return g.id !== via && o && P[o] && !has(o); });
+      if (!more) return blk;
+      var room = D.cw + D.cg;
+      if (side > 0) { blk.w = Math.max(blk.w, blk.cx + D.cw / 2 + room); return blk; }
+      var d = room - (blk.cx - D.cw / 2);
+      if (d <= 0) return blk;
+      return {
+        w: blk.w + d, cx: blk.cx + d,
+        items: blk.items.map(function (it) { return { pid: it.pid, x: it.x + d, row: it.row }; }),
+        links: blk.links.map(function (l) { return { fam: l.fam, rel: l.rel, ax: l.ax + d, bx: l.bx == null ? null : l.bx + d, cx: l.cx + d, row: l.row }; })
+      };
+    }
+    function pedBlock(pid, depth) {
       var leaf = { w: D.cw, cx: D.cw / 2, items: [], links: [] };
       if (depth <= 0) return leaf;
       var f = primaryParentFam(data, pid);
@@ -799,7 +816,7 @@
       if (a) put(a);
       if (b) put(b);
       var rel = kidRel(f, f.kids.find(function (q) { return q.id === pid; }));
-      var ba = a ? ped(a, depth - 1) : null, bb = b ? ped(b, depth - 1) : null;
+      var ba = a ? ped(a, depth - 1, -1, f.id) : null, bb = b ? ped(b, depth - 1, 1, f.id) : null;
       var shI = function (blk, dx) { return blk.items.map(function (it) { return { pid: it.pid, x: it.x + dx, row: it.row - 1 }; }); };
       var shL = function (blk, dx) { return blk.links.map(function (l) { return { fam: l.fam, rel: l.rel, ax: l.ax + dx, bx: l.bx == null ? null : l.bx + dx, cx: l.cx + dx, row: l.row - 1 }; }); };
       if (ba && bb) {
@@ -854,6 +871,11 @@
         });
         return left != null ? left : side < 0 ? near - D.gg - u.w : near + D.gg;
       };
+      // a card-sized spot at x on row r, a group gap clear of every card there
+      var free = function (x, r) {
+        return !Object.keys(out.nodes).some(function (id) { var n = out.nodes[id]; return n.row === r && n.x < x + D.cw + D.gg && n.x + D.cw > x - D.gg; });
+      };
+      var lanes = {};
       var links = bl.b.links.slice().sort(function (x, y) { return y.row - x.row; });
       links.forEach(function (l) {
         var f = l.fam, r = baseRow + l.row;
@@ -869,33 +891,50 @@
           V(kx, busY, rowY(r + 1), relStyle(rel), '');
           if (rel !== 'bio') out.tags.push({ x: kx + 7, y: rowY(r + 1) - 14, text: relTag(rel), rel: rel });
         });
-        // the couple's other marriages: the other partner beside them, joined by a line over the cards,
-        // their children (half-siblings of the line) below that partner
-        [f.a, f.b].forEach(function (x) {
-          if (!x || !out.nodes[x]) return;
-          fams(x).forEach(function (g) {
-            if (g.id === f.id) return;
-            var o = other(g, x), xc = out.nodes[x].x + D.cw / 2;
-            var u = o && P[o] && !has(o) ? personUnit(o, ALL_GEN, true) : null;
-            if (u) {
-              var left = spot(u, r, xc);
-              flatten(u, left, r);
-              var oc = out.nodes[o].x + D.cw / 2, ty = rowY(r) - 16, st = unionStyle(g), text = unionShort(g);
-              V(xc, ty, rowY(r), st.style, st.tone); H(xc, oc, ty, st.style, st.tone); V(oc, ty, rowY(r), st.style, st.tone);
-              if (text) out.labels.push({ x: (xc + oc) / 2, y: ty, text: text, cls: g.type === 'divorced' ? 'is-divorced' : '' });
-              return;
-            }
-            // no other partner (or already drawn): the children hang from this ancestor
-            var by = rowY(r) + D.ch + D.rg * 0.7;
-            g.kids.filter(function (k) { return P[k.id] && !has(k.id); }).forEach(function (k) {
-              var ku = personUnit(k.id, ALL_GEN, true), kl = spot(ku, r + 1, xc);
-              flatten(ku, kl, r + 1);
-              var kx = kl + ku.ax, rel = kidRel(g, k);
-              V(xc, rowY(r) + D.ch, by, 'solid', ''); H(xc, kx, by, 'solid', ''); V(kx, by, rowY(r + 1), relStyle(rel), '');
-            });
-          });
-        });
+        // the couple's other marriages, each partner on their own outer side
+        if (na) others(f.a, f.id, r, nb ? -1 : side);
+        if (nb) others(f.b, f.id, r, na ? 1 : side);
       });
+      // x's marriages other than `skip`: the first partner right beside x (ped kept that spot free), joined
+      // by an ordinary marriage line, their children (half-siblings of the line) from between them.
+      // A partner who can't sit beside x goes to the outside, joined by a line over the cards.
+      function others(x, skip, r, dir) {
+        var y = rowY(r), beside = true;
+        fams(x).forEach(function (g) {
+          if (g.id === skip) return;
+          var o = other(g, x), nx = out.nodes[x].x, xc = nx + D.cw / 2;
+          var st = unionStyle(g), text = unionShort(g), cls = g.type === 'divorced' ? 'is-divorced' : '';
+          if (!(o && P[o] && !has(o))) { hang(g, xc, y + D.ch, r); return; }   // no other partner, or already drawn
+          var ox = dir < 0 ? nx - D.cg - D.cw : nx + D.cw + D.cg;
+          if (beside && free(ox, r)) {
+            beside = false;
+            put(o);
+            out.nodes[o] = { x: ox, y: y, row: r };
+            var xl = Math.min(nx, ox) + D.cw, xr = Math.max(nx, ox), mid = (xl + xr) / 2;
+            H(xl, xr, y + D.ch / 2, st.style, st.tone);
+            if (text) out.labels.push({ x: mid, y: y + D.ch / 2, text: text, cls: cls });
+            hang(g, mid, y + D.ch / 2, r);
+            others(o, g.id, r, dir);
+            return;
+          }
+          var u = personUnit(o, ALL_GEN, true), left = spot(u, r, xc);
+          flatten(u, left, r);
+          var oc = out.nodes[o].x + D.cw / 2, ty = y - 8 - 8 * Math.min(3, lanes[r] = (lanes[r] || 0) + 1);   // each bracket its own height
+          V(xc, ty, y, st.style, st.tone); H(xc, oc, ty, st.style, st.tone); V(oc, ty, y, st.style, st.tone);
+          if (text) out.labels.push({ x: (xc + oc) / 2, y: ty, text: text, cls: cls });
+        });
+      }
+      // g's children not drawn yet, to the outside, on a bus of their own from (sx, sy)
+      function hang(g, sx, sy, r) {
+        var by = rowY(r) + D.ch + D.rg * 0.7;
+        g.kids.filter(function (k) { return P[k.id] && !has(k.id); }).forEach(function (k) {
+          var ku = personUnit(k.id, ALL_GEN, true), kl = spot(ku, r + 1, sx);
+          flatten(ku, kl, r + 1);
+          var kx = kl + ku.ax, rel = kidRel(g, k);
+          V(sx, sy, by, 'solid', ''); H(sx, kx, by, 'solid', ''); V(kx, by, rowY(r + 1), relStyle(rel), '');
+          if (rel !== 'bio') out.tags.push({ x: kx + 7, y: rowY(r + 1) - 14, text: relTag(rel), rel: rel });
+        });
+      }
     }
 
     var pf = opt.upGen > 0 ? primaryParentFam(data, focusId) : null;
@@ -940,7 +979,12 @@
         blocks.push({ pid: pid, b: b, shift: out.nodes[pid].x + D.cw / 2 - b.cx });
       });
       if (blocks.length === 2) {
-        var ext = function (bl) { var mn = Infinity, mx = -Infinity; bl.b.items.forEach(function (it) { mn = Math.min(mn, it.x - D.cw / 2); mx = Math.max(mx, it.x + D.cw / 2); }); return [mn + bl.shift, mx + bl.shift]; };
+        var ext = function (bl) {
+          if (opt.collateral) return [bl.shift, bl.shift + bl.b.w];   // includes the room kept for other partners
+          var mn = Infinity, mx = -Infinity;
+          bl.b.items.forEach(function (it) { mn = Math.min(mn, it.x - D.cw / 2); mx = Math.max(mx, it.x + D.cw / 2); });
+          return [mn + bl.shift, mx + bl.shift];
+        };
         var e0 = ext(blocks[0]), e1 = ext(blocks[1]), need = e0[1] + D.gg - e1[0];
         if (need > 0) { blocks[0].shift -= need / 2; blocks[1].shift += need / 2; }
       }

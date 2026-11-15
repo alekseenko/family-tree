@@ -402,7 +402,10 @@
       photoAdds ? count(photoAdds, 'фото', 'фото', 'фото') : '',
       count(autos.length, 'поле вирішено автоматично', 'поля вирішено автоматично', 'полів вирішено автоматично'),
       count(conflicts.length, 'розбіжність', 'розбіжності', 'розбіжностей')].filter(Boolean).join(' · ')));
-    var section = function (title, n, items) { return n ? el('section.ft-merge__sec', null, el('h3.ft-merge__h', null, title + ' (' + n + ')'), items) : null; };
+    // an empty section draws nothing (but is still a node, for appendChild)
+    var section = function (title, n, items) { return n ? el('section.ft-merge__sec', null, el('h3.ft-merge__h', null, title + ' (' + n + ')'), items) : document.createTextNode(''); };
+    var none = !pl.newPeople.length && !pl.items.length && !famAdds && !kidAdds && !photoAdds;
+    if (none) body.appendChild(el('p.ft-merge__lede', null, 'Усе з дерева «' + m.name + '» уже є у вашому — об’єднання нічого не змінить.'));
     var option = function (it, which, label, value) {
       var cur = FamilyMerge.pick(it, s.merge.choices);
       return el('button.ft-merge__opt', { type: 'button', 'aria-pressed': String(cur === which), 'data-k': 'mopt:' + it.key + ':' + which, on: { click: function () { choose(it, which); } } },
@@ -425,9 +428,10 @@
     body.appendChild(section('Фото', photoAdds, el('p.ft-hint', null, 'Усі фото з обох дерев залишаться; однакові файли не дублюватимуться. Головне фото — ваше, якщо воно є. ' +
       pl.photos.map(function (x) { return FE.givenOf(d.people[x.who]) + ': +' + x.add.length; }).join(', '))));
     if (err) body.appendChild(err);
-    foot.appendChild(el('p.ft-hint', null, (St.S.mode === 'folder' ? 'Перед об’єднанням поточне дерево збережеться в backups/. ' : '') + 'Об’єднання можна скасувати одразу після (⌘Z / Ctrl+Z).'));
+    if (!none) foot.appendChild(el('p.ft-hint', null, (St.S.mode === 'folder' ? 'Перед об’єднанням поточне дерево збережеться в backups/. ' : '') + 'Об’єднання можна скасувати одразу після (⌘Z / Ctrl+Z).'));
     foot.appendChild(el('button.ft-btn', { type: 'button', on: { click: function () { upd({ step: 'match', err: '' }); } } }, 'Назад'));
-    foot.appendChild(el('button.ft-btn.ft-btn--primary', { type: 'button', 'data-k': 'merge-apply', on: { click: A.mergeApply } }, 'Об’єднати'));
+    foot.appendChild(none ? el('button.ft-btn.ft-btn--primary', { type: 'button', 'data-k': 'merge-close-done', on: { click: close } }, 'Закрити')
+      : el('button.ft-btn.ft-btn--primary', { type: 'button', 'data-k': 'merge-apply', on: { click: A.mergeApply } }, 'Об’єднати'));
     return wrap;
   }
 

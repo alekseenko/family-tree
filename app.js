@@ -12,7 +12,7 @@
   var s = {
     data: null, rev: 0, focusId: null, view: 'tree', dvRoot: null,
     zoom: 1, panX: 0, panY: 0, anim: false, lineFade: false, centered: false, dragging: false,
-    density: pref('density', 'compact'), theme: pref('theme', 'system'), nameCase: pref('nameCase', 'as'), showChanges: false, evOpen: false, evYear: false, evMemorial: pref('evMemorial', '1') === '1',
+    density: pref('density', 'compact'), theme: pref('theme', 'system'), nameCase: pref('nameCase', 'as'), showChanges: false, tlGroup: FA.tlGroup(), tlYear: null, tlLegend: false, evOpen: false, evYear: false, evMemorial: pref('evMemorial', '1') === '1',
     present: location.hash === '#present' || pref('present', '0') === '1',
     drawerOpen: true, editMode: false, qa: null, menuOpen: false, statusOpen: false, explainerOpen: false, moreOpen: false,
     search: '', searchOpen: false, searchIdx: 0, phoneSearch: false,
@@ -605,7 +605,7 @@
   function captureFocus() {
     var a = document.activeElement;
     var keep = { scroll: {} };
-    ['.ft-drawer__scroll', '.ft-list', '.ft-picker', '.ft-menu', '.ft-merge'].forEach(function (sel) { var n = root.querySelector(sel); if (n) keep.scroll[sel] = [n.scrollTop, n.scrollLeft]; });
+    ['.ft-drawer__scroll', '.ft-list', '.tl-scroll', '.ft-picker', '.ft-menu', '.ft-merge'].forEach(function (sel) { var n = root.querySelector(sel); if (n) keep.scroll[sel] = [n.scrollTop, n.scrollLeft]; });
     keep.drawerFor = lastDrawerFor;
     if (a && root.contains(a) && a.getAttribute('data-k')) {
       keep.k = a.getAttribute('data-k');
@@ -1606,6 +1606,7 @@
     if (s.confirm) { set({ confirm: null, focusReq: 'card:' + s.focusId }); return true; }
     if (s.showKeys) { set({ showKeys: false, focusReq: 'card:' + s.focusId }); return true; }
     if (s.showChanges) { set({ showChanges: false, focusReq: 'menu' }); return true; }
+    if (s.tlLegend && s.view === 'time') { set({ tlLegend: false, focusReq: 'tl-legend-btn' }); return true; }
     if (s.qa) { set({ qa: null, focusReq: 'card:' + s.focusId }); return true; }
     if (s.menuOpen || s.evOpen || s.statusOpen || s.explainerOpen || s.moreOpen || s.depthOpen || s.showLegend) {
       // focus goes back to the button that opened it
@@ -1682,7 +1683,10 @@
       case 'H': if (tree) act(goRoot); return;
       case 'F': if (tree) act(fit); return;
       case 'A': if (tree) act(showAll); return;
-      case 'L': if (tree) act(function () { set({ showLegend: !s.showLegend, depthOpen: false }); }); return;
+      case 'L':
+        if (tree) act(function () { set({ showLegend: !s.showLegend, depthOpen: false }); });
+        else if (s.view === 'time') act(function () { set({ tlLegend: !s.tlLegend }); });
+        return;
       case 'D': if (tree) act(function () { setDensity(s.density === 'compact' ? 'expanded' : 'compact'); }); return;
     }
     if (k === '+' || k === '=' || code === 'NumpadAdd') { if (tree) act(function () { zoomBy(1.25, null, null, true); }); return; }
@@ -1749,6 +1753,7 @@
           var was = [isPhone(), isTablet()];
           s.appW = w;
           if (was[0] !== isPhone() || was[1] !== isTablet()) render();
+          else if (s.view === 'time') later('tlResize', 120, render);   // the timeline's scale fits the width
         }
       }).observe(root);
     }
@@ -1819,6 +1824,7 @@
   /* ================================================================ exports for drawer.js / views.js */
   Object.assign(A, {
     set: set, schedule: schedule, render: render, commit: commit, undo: undo, redo: redo, toast: toast,
+    bodyWidth: function () { return (dom.main.parentNode && dom.main.parentNode.clientWidth) || s.appW; },
     ro: ro, issues: issues, isPhone: isPhone, viewOnlyScreen: viewOnlyScreen, isTablet: isTablet, P: P, given: given, later: later, cancel: function (key) { clearTimeout(timers[key]); },
     focusPerson: focusPerson, openQa: openQa, startEdit: startEdit, endEdit: endEdit, askDelete: askDelete,
     setView: setView, goRoot: goRoot, connect: connect, download: download, importFile: importFile, startEmpty: startEmpty,

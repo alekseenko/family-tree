@@ -90,10 +90,11 @@
   // 'upper' ІВАН КОВАЛЕНКО. A letter after an apostrophe stays small: Мар’яна.
   var nameCase = 'as';
   function setNameCase(v) { nameCase = v === 'cap' || v === 'upper' ? v : 'as'; }
-  function caseName(t) {
+  function caseName(t, mode) {
     t = String(t == null ? '' : t);
-    if (nameCase === 'upper') return t.toLocaleUpperCase('uk');
-    if (nameCase === 'cap') return t.toLocaleLowerCase('uk').replace(/(^|[\s\-‐–—(«"„.]+)(\S)/g, function (m, a, c) { return a + c.toLocaleUpperCase('uk'); });
+    var nc = mode || nameCase;
+    if (nc === 'upper') return t.toLocaleUpperCase('uk');
+    if (nc === 'cap') return t.toLocaleLowerCase('uk').replace(/(^|[\s\-‐–—(«"„.]+)(\S)/g, function (m, a, c) { return a + c.toLocaleUpperCase('uk'); });
     return t;
   }
   function nameOf(p) { if (!p) return ''; var n = [p.given, p.surname].filter(Boolean).join(' ').trim(); return n ? caseName(n) : 'Невідомо'; }

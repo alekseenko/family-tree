@@ -1,0 +1,1053 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<title>Хронологія — варіанти</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./familytree.css">
+<link rel="stylesheet" href="./timeline.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div class="tl-root ft-theme" data-theme="{{theme}}" style="width: {{rootW}}px; height: {{rootH}}px" tabIndex="-1" onKeyDown="{{onKey}}">
+<div class="tl-frame" style="width: {{frameW}}px; height: {{frameH}}px; transform: translate({{tx}}px, {{ty}}px) scale({{sc}})">
+
+<sc-if value="{{isDesk}}" hint-placeholder-val="{{ true }}">
+  <header class="ft-topbar">
+    <div class="ft-brand">
+      <span class="ft-brand__mark" aria-hidden="true"><svg class="ft-ico ft-ico--lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.5C10 5 7.3 4.5 4 4.5v13c3.3 0 6 .5 8 2 2-1.5 4.7-2 8-2v-13c-3.3 0-6 .5-8 2z"></path><path d="M12 6.5v13"></path></svg></span>
+      <span class="ft-brand__title">Родинний архів · Коваленко</span>
+    </div>
+    <nav class="ft-tabs" aria-label="Розділи">
+      <button type="button" class="ft-tab" aria-pressed="false">Дерево</button>
+      <button type="button" class="ft-tab" aria-pressed="false">Люди</button>
+      <button type="button" class="ft-tab" aria-pressed="false">Нащадки</button>
+      <button type="button" class="ft-tab" aria-pressed="true">Хронологія</button>
+    </nav>
+    <div class="ft-spacer"></div>
+    <div class="ft-search">
+      <svg class="ft-ico ft-search__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"></circle><path d="M20 20l-4.2-4.2"></path></svg>
+      <input class="ft-input ft-search__input" type="search" placeholder="Пошук людей" aria-label="Пошук людей">
+      <kbd class="ft-kbd ft-search__kbd">/</kbd>
+    </div>
+    <button type="button" class="ft-icon-btn" aria-label="Меню"><svg class="ft-ico ft-ico--lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path></svg></button>
+  </header>
+
+  <div class="tl-body">
+    <main class="tl-main" aria-label="Хронологія родини">
+      <div class="tl-head">
+        <div><h1 class="tl-title">Хронологія</h1><p class="tl-sub">{{sub}}</p></div>
+        <div class="tl-ctrls">
+          <sc-for list="{{ctrls}}" as="c" hint-placeholder-count="2">
+            <sc-if value="{{c.isSeg}}"><span class="tl-ctrl-label">{{c.label}}</span><div class="ft-seg" role="group" aria-label="{{c.label}}"><sc-for list="{{c.opts}}" as="o"><button type="button" aria-pressed="{{o.sel}}" onClick="{{o.pick}}">{{o.label}}</button></sc-for></div></sc-if>
+            <sc-if value="{{c.isCheck}}"><label class="ft-check" style="font-size: 13px"><input type="checkbox" checked="{{c.on}}" readOnly="readOnly">{{c.label}}</label></sc-if>
+            <sc-if value="{{c.isZoom}}"><div class="ft-toolgroup" role="group" aria-label="Масштаб" style="box-shadow: none"><button type="button" class="ft-icon-btn ft-icon-btn--sm" aria-label="Зменшити"><svg class="ft-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"></path></svg></button><span style="font-size: 12px; font-weight: 600; color: var(--ink-2); min-width: 64px; text-align: center">{{c.label}}</span><button type="button" class="ft-icon-btn ft-icon-btn--sm" aria-label="Збільшити"><svg class="ft-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></button></div></sc-if>
+            <sc-if value="{{c.isBtn}}"><button type="button" class="ft-btn ft-btn--sm {{c.cls}}">{{c.label}}</button></sc-if>
+          </sc-for>
+          <button type="button" class="ft-btn ft-btn--sm ft-btn--ghost tl-lgbtn" aria-expanded="{{lg.open}}" aria-controls="tl-legend" title="Легенда (L)" onClick="{{toggleLegend}}"><svg class="ft-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M10 7h10M10 12h10M10 17h10"></path><path d="M4 7h3M4 12h1M6 12h1M4 17h.5M6 17h.5"></path></svg>Легенда</button>
+        </div>
+      </div>
+
+      <sc-if value="{{isV3}}">
+        <div class="tl-evlane" style="top: {{laneTop}}px" aria-label="Історичні події">
+          <sc-for list="{{evLabels}}" as="e" hint-placeholder-count="0"><span class="tl-evlabel {{e.cls}}" style="left: {{e.x}}px; top: {{e.top}}px" title="{{e.aria}}">{{e.text}}<b>{{e.years}}</b></span></sc-for>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{isV4}}">
+        <div class="tl-ov" style="top: {{ovTop}}px" aria-label="Огляд: скільки людей жило щороку">
+          <div class="tl-ov__head"><b>Скільки людей жило щороку</b><span>{{ov.peak}}</span><span style="margin-left: auto">{{ov.range}}</span></div>
+          <div class="tl-hist" onClick="{{histClick}}" ref="{{histRef}}" role="img" aria-label="{{ov.aria}}">
+            <sc-for list="{{ov.bars}}" as="b" hint-placeholder-count="0"><span class="tl-hbar {{b.cls}}" style="left: {{b.x}}px; width: {{b.w}}px; height: {{b.h}}px"></span></sc-for>
+            <span class="tl-shade" style="left: {{ov.l.x}}px; width: {{ov.l.w}}px"></span>
+            <span class="tl-shade" style="left: {{ov.r.x}}px; width: {{ov.r.w}}px"></span>
+            <span class="tl-brush" style="left: {{ov.bx}}px; width: {{ov.bw}}px"><span class="tl-brush__h" style="left: -5px"></span><span class="tl-brush__h" style="right: -5px"></span></span>
+          </div>
+          <div class="tl-ov__axis"><sc-for list="{{ov.ticks}}" as="t" hint-placeholder-count="0"><span class="tl-axis__t {{t.cls}}" style="left: {{t.x}}px; top: 0">{{t.t}}</span></sc-for></div>
+          <button type="button" class="tl-chip tl-bucket" style="top: 128px; height: 24px"><span class="tl-av is-undated" style="width: 16px; height: 16px">?</span>6 без дат</button>
+        </div>
+      </sc-if>
+
+      <div class="tl-axis" style="top: {{axisTop}}px">
+        <sc-for list="{{ticks}}" as="t" hint-placeholder-count="0"><span class="tl-axis__t {{t.cls}}" style="left: {{t.x}}px">{{t.t}}</span></sc-for>
+        <sc-if value="{{showTodayLab}}"><span class="tl-axis__today" style="left: {{todayX}}px">сьогодні</span></sc-if>
+        <span class="tl-rbadge" style="left: {{rb.x}}px">{{rb.t}}</span>
+        <span class="tl-pill" style="left: {{pill.x}}px; top: 2px">{{pill.text}}</span>
+      </div>
+
+      <div class="tl-scroll" style="top: {{scrollTop}}px; bottom: {{scrollBottom}}px" ref="{{scrollRef}}" onPointerMove="{{onMove}}" onPointerLeave="{{onLeave}}" onClick="{{onPlotClick}}">
+        <div class="tl-plot" style="height: {{plotH}}px">
+          <sc-for list="{{evCols}}" as="e" hint-placeholder-count="0"><span class="tl-ev {{e.cls}}" style="left: {{e.x}}px; width: {{e.w}}px"></span></sc-for>
+          <sc-for list="{{grids}}" as="g" hint-placeholder-count="0"><span class="tl-grid {{g.cls}}" style="left: {{g.x}}px"></span></sc-for>
+          <sc-for list="{{bgs}}" as="b" hint-placeholder-count="0"><span class="{{b.cls}}" style="top: {{b.top}}px; height: {{b.h}}px"></span></sc-for>
+          <span class="tl-hband" style="left: {{hb.x}}px; width: {{hb.w}}px"></span>
+          <span class="tl-hline" style="left: {{hb.cx}}px"></span>
+          <sc-if value="{{showToday}}"><span class="tl-today" style="left: {{todayX}}px"></span></sc-if>
+          <sc-for list="{{conns}}" as="c" hint-placeholder-count="0"><span class="{{c.cls}}" style="left: {{c.x}}px; top: {{c.top}}px; height: {{c.h}}px"></span></sc-for>
+          <sc-for list="{{rows}}" as="r" hint-placeholder-count="12">
+            <div class="{{r.cls}}" style="top: {{r.top}}px; height: {{r.h}}px">
+              <sc-if value="{{r.isBand}}"><div class="tl-band-label">{{r.bandLabel}}<span>{{r.bandSub}}</span></div></sc-if>
+              <sc-if value="{{r.isGroup}}"><div class="tl-grouphdr">{{r.bandLabel}}</div></sc-if>
+              <sc-for list="{{r.guides}}" as="g"><span class="tl-guide" style="left: {{g.x}}px"></span></sc-for>
+              <sc-if value="{{r.hasName}}">
+                <button type="button" class="tl-name" style="left: {{r.nameX}}px; width: {{r.nameW}}px" onClick="{{r.select}}" aria-label="{{r.aria}}">
+                  <sc-if value="{{r.hasPmark}}"><span class="{{r.pmark}}" aria-hidden="true"></span></sc-if>
+                  <span class="tl-av {{r.av.cls}}"><sc-if value="{{r.av.photo}}"><img src="{{r.av.photo}}" alt=""></sc-if><sc-if value="{{r.av.noPhoto}}">{{r.av.initials}}</sc-if></span>
+                  <span class="tl-name__t" style="min-width: 0; {{r.nameStyle}}">{{r.name}}</span>
+                  <sc-if value="{{r.showYears}}"><span class="tl-name__y">{{r.years}}</span></sc-if>
+                </button>
+              </sc-if>
+              <sc-for list="{{r.segs}}" as="s"><span class="{{s.cls}}" style="left: {{s.x}}px; top: {{s.y}}px; width: {{s.w}}px; height: {{s.h}}px"></span></sc-for>
+              <sc-for list="{{r.marks}}" as="m"><span class="{{m.cls}}" style="left: {{m.x}}px; top: {{m.y}}px">{{m.t}}</span></sc-for>
+              <sc-for list="{{r.ticks}}" as="t"><span class="tl-agetick" style="left: {{t.x}}px">{{t.t}}</span></sc-for>
+              <sc-for list="{{r.labs}}" as="l"><span class="{{l.cls}}" style="left: {{l.x}}px">{{l.text}}<sc-if value="{{l.sub}}"><span>{{l.sub}}</span></sc-if></span></sc-for>
+              <sc-for list="{{r.btns}}" as="l"><button type="button" class="{{l.cls}}" style="left: {{l.x}}px" onClick="{{l.select}}" aria-label="{{l.aria}}">{{l.text}}<sc-if value="{{l.sub}}"><span>{{l.sub}}</span></sc-if></button></sc-for>
+              <sc-if value="{{r.hasUnd}}"><span class="tl-undated-pill" style="left: {{r.undX}}px">{{r.undText}}</span></sc-if>
+            </div>
+          </sc-for>
+          <sc-for list="{{ages}}" as="a" hint-placeholder-count="0"><span class="tl-age {{a.cls}}" style="left: {{a.x}}px; top: {{a.y}}px">{{a.t}}</span></sc-for>
+          <sc-if value="{{tip.show}}">
+            <div class="tl-tip" style="left: {{tip.x}}px; top: {{tip.y}}px" role="tooltip">
+              <div class="tl-tip__head"><span class="tl-av tl-av--md {{tip.av.cls}}"><sc-if value="{{tip.av.photo}}"><img src="{{tip.av.photo}}" alt=""></sc-if><sc-if value="{{tip.av.noPhoto}}">{{tip.av.initials}}</sc-if></span><span><span class="tl-tip__name" style="display: block">{{tip.name}}</span><span class="tl-tip__years">{{tip.years}}</span></span></div>
+              <div class="tl-tip__now {{tip.nowCls}}">{{tip.now}}</div>
+              <sc-for list="{{tip.evs}}" as="e"><div class="tl-tip__ev"><span class="tl-lg-glyph"><span class="{{e.cls}}"></span></span><span>{{e.y}}</span><span>{{e.t}}</span></div></sc-for>
+              <sc-if value="{{tip.more}}"><div class="tl-tip__years">{{tip.more}}</div></sc-if>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+
+      <sc-if value="{{showDock}}">
+        <div class="tl-dock" aria-label="Люди без відомих дат">
+          <span class="tl-dock__t">Без відомих дат · {{undCount}}</span>
+          <sc-for list="{{und}}" as="u" hint-placeholder-count="6"><button type="button" class="tl-chip" onClick="{{u.select}}" title="{{u.rel}}"><span class="tl-av is-undated">{{u.initials}}</span>{{u.name}}<span class="tl-chip__rel">{{u.rel}}</span></button></sc-for>
+          <sc-if value="{{undMore.show}}"><button type="button" class="tl-chip tl-chip--more" title="{{undMore.title}}">{{undMore.text}}</button></sc-if>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{isV5}}">
+        <section class="tl-story" style="height: {{storyH}}px" aria-label="Події життя">
+          <div class="tl-story__head"><h2 class="tl-story__t" style="margin: 0">Події життя · {{story.name}}</h2><span class="ft-chip">{{story.count}}</span><span style="margin-left: auto; font-size: 12px; color: var(--ink-2)">Без дат у цій родині:</span><sc-for list="{{story.und}}" as="u"><button type="button" class="tl-chip" style="height: 24px" title="{{u.rel}}"><span class="tl-av is-undated" style="width: 16px; height: 16px">{{u.initials}}</span>{{u.name}}<span class="tl-chip__rel">{{u.rel}}</span></button></sc-for></div>
+          <div class="tl-story__cols">
+            <sc-for list="{{story.items}}" as="i" hint-placeholder-count="8"><div class="tl-st {{i.cls}}"><span class="tl-st__y">{{i.y}}</span><span class="tl-st__a">{{i.a}}</span><span class="tl-lg-glyph"><span class="{{i.g}}"></span></span><span class="tl-st__t">{{i.t}}</span></div></sc-for>
+          </div>
+        </section>
+      </sc-if>
+
+      <sc-for list="{{callouts}}" as="c" hint-placeholder-count="0"><span class="tl-callout" style="left: {{c.x}}px; top: {{c.y}}px">{{c.n}}</span></sc-for>
+    </main>
+
+    <sc-if value="{{panelOpen}}">
+      <aside class="tl-panel" aria-label="Особа: {{pn.name}}">
+        <div class="tl-panel__bar"><span class="tl-panel__crumb">Особа</span><span style="display: flex; gap: 4px"><button type="button" class="ft-btn ft-btn--ghost ft-btn--sm">Відкрити в дереві</button><button type="button" class="ft-icon-btn" aria-label="Закрити панель"><svg class="ft-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button></span></div>
+        <div class="tl-panel__scroll">
+          <div class="tl-panel__head">
+            <span class="tl-av tl-av--lg {{pn.av.cls}}"><sc-if value="{{pn.av.photo}}"><img src="{{pn.av.photo}}" alt="Фото: {{pn.name}}"></sc-if><sc-if value="{{pn.av.noPhoto}}">{{pn.av.initials}}</sc-if></span>
+            <div style="min-width: 0">
+              <h2 class="tl-panel__name">{{pn.name}}</h2>
+              <sc-if value="{{pn.aka}}"><p class="tl-panel__aka">{{pn.aka}}</p></sc-if>
+              <p class="tl-panel__years">{{pn.years}}</p>
+              <dl class="tl-facts"><sc-for list="{{pn.facts}}" as="f"><div><dt>{{f.k}}</dt><dd>{{f.v}}</dd></div></sc-for></dl>
+            </div>
+          </div>
+          <section class="tl-psec"><h3 class="tl-psec__t">У хронології</h3><div class="tl-chron"><sc-for list="{{pn.chron}}" as="c"><div><i></i><span>{{c}}</span></div></sc-for></div></section>
+          <section class="tl-psec"><h3 class="tl-psec__t">Родина</h3>
+            <sc-for list="{{pn.fam}}" as="f"><div class="tl-prel"><span class="tl-av tl-av--md {{f.av.cls}}"><sc-if value="{{f.av.photo}}"><img src="{{f.av.photo}}" alt=""></sc-if><sc-if value="{{f.av.noPhoto}}">{{f.av.initials}}</sc-if></span><span style="min-width: 0"><span class="tl-prel__n">{{f.name}}</span><span class="tl-prel__m">{{f.years}}</span></span><span class="tl-prel__r">{{f.rel}}</span></div></sc-for>
+          </section>
+          <section class="tl-psec"><h3 class="tl-psec__t">Нотатки</h3><p style="margin: 0; font-family: var(--font-serif); font-size: 15px; line-height: 1.55; color: var(--ink)">{{pn.note}}</p></section>
+        </div>
+      </aside>
+    </sc-if>
+  </div>
+</sc-if>
+
+<sc-if value="{{isPhone}}" hint-placeholder-val="{{ false }}">
+  <div class="tl-ph-top">
+    <div class="tl-ph-row"><span class="tl-ph-title">Родинний архів · Коваленко</span><button type="button" class="ft-icon-btn" aria-label="Пошук"><svg class="ft-ico ft-ico--lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"></circle><path d="M20 20l-4.2-4.2"></path></svg></button><button type="button" class="ft-icon-btn" aria-label="Меню"><svg class="ft-ico ft-ico--lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path></svg></button></div>
+    <div class="tl-ph-tabs" role="group" aria-label="Розділи"><button type="button" aria-pressed="false">Дерево</button><button type="button" aria-pressed="false">Люди</button><button type="button" aria-pressed="false">Нащадки</button><button type="button" aria-pressed="true">Хронологія</button></div>
+  </div>
+  <div class="tl-body">
+    <main class="tl-main" aria-label="Хронологія родини">
+      <div class="tl-ph-head"><div><h1 class="tl-title" style="font-size: 22px">Хронологія</h1><p class="tl-sub" style="font-size: 12px">Утримуйте й ведіть, щоб обрати рік</p></div><button type="button" class="ft-icon-btn tl-lgbtn" style="margin-left: auto" aria-label="Легенда" aria-expanded="{{lg.open}}" aria-controls="tl-legend" onClick="{{toggleLegend}}"><svg class="ft-ico ft-ico--lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M10 7h10M10 12h10M10 17h10"></path><path d="M4 7h3M4 12h1M6 12h1M4 17h.5M6 17h.5"></path></svg></button></div>
+      <div class="tl-ph-ctrl">
+        <div class="ft-seg" role="group" aria-label="Групувати"><sc-for list="{{groupOpts}}" as="o" hint-placeholder-count="2"><button type="button" aria-pressed="{{o.sel}}" onClick="{{o.pick}}">{{o.label}}</button></sc-for></div>
+        <span class="tl-pill tl-ph-pill">{{pill.text}}</span>
+      </div>
+      <div class="tl-axis" style="top: 96px; height: 26px">
+        <sc-for list="{{ticks}}" as="t" hint-placeholder-count="0"><span class="tl-axis__t {{t.cls}}" style="left: {{t.x}}px; top: 6px">{{t.t}}</span></sc-for>
+        <span class="tl-scrub" style="left: {{rb.x}}px">{{rb.t}}</span>
+      </div>
+      <div class="tl-scroll" style="top: 122px; bottom: 0" ref="{{scrollRef}}" onPointerMove="{{onMove}}" onPointerLeave="{{onLeave}}" onClick="{{onPlotClick}}">
+        <div class="tl-plot" style="height: {{plotH}}px">
+          <sc-for list="{{grids}}" as="g" hint-placeholder-count="0"><span class="tl-grid {{g.cls}}" style="left: {{g.x}}px"></span></sc-for>
+          <sc-for list="{{bgs}}" as="b" hint-placeholder-count="0"><span class="{{b.cls}}" style="top: {{b.top}}px; height: {{b.h}}px"></span></sc-for>
+          <span class="tl-hband" style="left: {{hb.x}}px; width: {{hb.w}}px"></span>
+          <span class="tl-hline" style="left: {{hb.cx}}px"></span>
+          <span class="tl-today" style="left: {{todayX}}px"></span>
+          <sc-for list="{{conns}}" as="c" hint-placeholder-count="0"><span class="{{c.cls}}" style="left: {{c.x}}px; top: {{c.top}}px; height: {{c.h}}px"></span></sc-for>
+          <sc-for list="{{rows}}" as="r" hint-placeholder-count="12">
+            <div class="{{r.cls}}" style="top: {{r.top}}px; height: {{r.h}}px">
+              <sc-if value="{{r.isBand}}"><div class="tl-band-label" style="left: 12px">{{r.bandLabel}}<span>{{r.bandSub}}</span></div></sc-if>
+              <sc-for list="{{r.guides}}" as="g"><span class="tl-guide" style="left: {{g.x}}px"></span></sc-for>
+              <sc-if value="{{r.isPerson}}"><button type="button" class="tl-ph-name" style="left: {{r.nameX}}px" onClick="{{r.select}}" aria-label="{{r.aria}}"><sc-if value="{{r.hasPmark}}"><span class="{{r.pmark}}" aria-hidden="true"></span></sc-if><b style="font-weight: inherit; {{r.nameStyle}}">{{r.name}}</b><span>{{r.years}}</span></button></sc-if>
+              <sc-for list="{{r.segs}}" as="s"><span class="{{s.cls}}" style="left: {{s.x}}px; top: {{s.y}}px; width: {{s.w}}px; height: {{s.h}}px"></span></sc-for>
+              <sc-for list="{{r.marks}}" as="m"><span class="{{m.cls}}" style="left: {{m.x}}px; top: {{m.y}}px">{{m.t}}</span></sc-for>
+              <sc-for list="{{r.labs}}" as="l"><span class="{{l.cls}}" style="left: {{l.x}}px; top: 26px">{{l.text}}</span></sc-for>
+              <sc-if value="{{r.hasUnd}}"><span class="tl-undated-pill" style="left: {{r.undX}}px; top: 26px">{{r.undText}}</span></sc-if>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div class="tl-peek">
+        <span class="tl-av tl-av--md {{pn.av.cls}}" style="width: 40px; height: 48px"><sc-if value="{{pn.av.photo}}"><img src="{{pn.av.photo}}" alt=""></sc-if><sc-if value="{{pn.av.noPhoto}}">{{pn.av.initials}}</sc-if></span>
+        <span style="flex: 1 1 auto; min-width: 0"><span style="display: block; font-family: var(--font-serif); font-size: 16px">{{pn.name}}</span><span style="display: block; font-size: 12px; color: var(--ink-2); font-variant-numeric: tabular-nums">{{pn.years}}</span><span style="display: block; font-size: 12px; font-weight: 650; color: var(--accent)">{{pn.atYear}}</span></span>
+        <button type="button" class="ft-btn ft-btn--sm">Деталі</button>
+      </div>
+    </main>
+  </div>
+</sc-if>
+
+<sc-if value="{{lg.open}}">
+  <div class="ft-legend tl-lgp {{lg.cls}}" style="--lg-right: {{lg.right}}px" id="tl-legend" role="dialog" aria-label="Легенда хронології">
+    <sc-if value="{{lg.phone}}"><div class="tl-lgp__head"><span class="tl-lgp__t">Легенда</span><button type="button" class="ft-icon-btn" aria-label="Закрити легенду" onClick="{{closeLegend}}"><svg class="ft-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button></div></sc-if>
+    <span class="ft-legend__h">Життя</span>
+    <div class="ft-legend__row"><span class="tl-lgs"><span class="tl-lgs__bar is-live"></span><span class="tl-mk is-cap" style="left: 35px"></span></span><span>Жива людина — смуга триває до сьогодні</span></div>
+    <div class="ft-legend__row"><span class="tl-lgs"><span class="tl-lgs__bar"></span></span><span>Померла людина</span></div>
+    <div class="ft-legend__row"><span class="tl-lgs"><span class="tl-lgs__bar is-hatch"></span></span><span>Приблизна дата — «бл.» або «до»</span></div>
+    <div class="ft-legend__row"><span class="tl-lgs"><span class="tl-lgs__bar is-short"></span><span class="tl-lgs__bar is-hatch is-tail"></span><span class="tl-mk is-q" style="left: 36px">?</span></span><span>Рік смерті невідомий — рахується окремо як «невідомо»</span></div>
+    <div class="ft-legend__row"><span class="tl-lgs"><span class="tl-av is-dec">ІК</span></span><span>Траурна стрічка на фото — людина померла</span></div>
+    <div class="ft-legend__row"><span class="tl-lgs"><span class="tl-av is-undated">?</span></span><span>{{lg.undText}}</span></div>
+    <span class="ft-legend__h">Події на смузі</span>
+    <div class="ft-legend__row"><span class="tl-lgs"><span class="tl-lgs__bar"></span><span class="tl-mk is-m"></span></span><span>Шлюб</span></div>
+    <div class="ft-legend__row"><span class="tl-lgs"><span class="tl-lgs__bar"></span><span class="tl-mk is-p"></span></span><span>Партнерство без шлюбу</span></div>
+    <div class="ft-legend__row"><span class="tl-lgs"><span class="tl-lgs__bar"></span><span class="tl-mk is-div"></span></span><span>Розлучення</span></div>
+    <div class="ft-legend__row"><span class="tl-lgs"><span class="tl-lgs__bar"></span><span class="tl-mk is-kid"></span></span><span>Народилася дитина</span></div>
+    <div class="ft-legend__row"><span class="tl-lgs"><span class="tl-lgs__bar"></span><span class="tl-mk is-adopt"></span></span><span>Усиновлення</span></div>
+    <sc-if value="{{lg.branch}}">
+      <span class="ft-legend__h">Родовід</span>
+      <div class="ft-legend__row"><span class="tl-lgs"><span class="tl-lgs__indent"></span></span><span>Відступ — діти під своїми батьками</span></div>
+      <sc-if value="{{lg.lines}}">
+        <div class="ft-legend__row"><span class="tl-lgs"><span class="tl-lgs__vline"></span></span><span>Від батьків до дитини — у рік народження</span></div>
+        <div class="ft-legend__row"><span class="tl-lgs"><span class="tl-lgs__vline is-tie"></span></span><span>Пара — у рік шлюбу</span></div>
+      </sc-if>
+      <div class="ft-legend__row"><span class="tl-lgs"><span class="tl-pmark" style="margin-left: 15px"></span></span><span>Кружечок перед ім’ям — у родині через шлюб</span></div>
+    </sc-if>
+    <sc-if value="{{lg.event}}">
+      <span class="ft-legend__h">Історія</span>
+      <div class="ft-legend__row"><span class="tl-lgs"><span class="tl-lgs__ev"></span></span><span>Історична подія — роки, коли вона тривала</span></div>
+    </sc-if>
+    <span class="ft-legend__h">Вибір і рік</span>
+    <div class="ft-legend__row"><span class="tl-lgs"><span class="tl-lgs__sel"></span></span><span>{{lg.selText}}</span></div>
+    <div class="ft-legend__row"><span class="tl-lgs"><span class="tl-lgs__rel">донька</span></span><span>Родичі обраної людини підписані</span></div>
+    <div class="ft-legend__row"><span class="tl-lgs"><span class="tl-lgs__bar is-dim"></span></span><span>Приглушено — у вибраний рік ще не народився або вже помер</span></div>
+    <div class="ft-legend__row"><span class="tl-lgs"><span class="tl-lgs__today"></span></span><span>Пунктир — сьогодні</span></div>
+  </div>
+</sc-if>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"variant":{"editor":"enum","options":["1","2","3","4","5"],"default":"2","section":"Варіант"},"theme":{"editor":"enum","options":["light","dark"],"default":"light","section":"Варіант"},"device":{"editor":"enum","options":["desktop","phone"],"default":"desktop","section":"Варіант"},"group":{"editor":"enum","options":["auto","branch","gen"],"default":"auto","section":"Стан"},"legend":{"editor":"enum","options":["closed","open"],"default":"closed","section":"Стан"},"hoverYear":{"editor":"int","min":1865,"max":2026,"default":1944,"section":"Стан"},"selected":{"editor":null},"tip":{"editor":null},"panel":{"editor":null},"closeup":{"editor":null},"closeW":{"editor":null},"closeH":{"editor":null},"closeScale":{"editor":null},"closeX":{"editor":null},"closeY":{"editor":null},"callouts":{"editor":null},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  hist() {
+    return [
+      { b: 1914, e: 1918, t: 'Перша світова війна', s: 'Перша світова', y: '1914–18' },
+      { b: 1932, e: 1933, t: 'Голодомор', s: 'Голодомор', y: '1932–33' },
+      { b: 1939, e: 1945, t: 'Друга світова війна', s: 'Друга світова', y: '1939–45' },
+      { b: 1986, e: 1986, t: 'Чорнобильська катастрофа', s: 'Чорнобиль', y: '1986' },
+      { b: 1991, e: 1991, t: 'Незалежність України', s: 'Незалежність', y: '1991' },
+      { b: 2022, e: 2026, t: 'Повномасштабне вторгнення', s: 'Повномасштабна війна', y: 'з 2022' }
+    ];
+  }
+  constructor(...args) {
+    super(...args);
+    const p = this.props || {};
+    this.state = { hy: null, hp: null, sel: p.selected || 'k9', brush: [1920, 1960], group: null, legend: null };
+  }
+  componentDidUpdate(prev) {
+    const p = this.props || {}, q = prev || {};
+    if (p.selected !== q.selected && p.selected) this.setState({ sel: p.selected });
+  }
+  h(n) { if (!this._h) this._h = {}; if (!this._h[n]) this._h[n] = this[n].bind(this); return this._h[n]; }
+
+  /* ---------------------------------------------------------------- data (fictional) */
+  data() {
+    if (this._data) return this._data;
+    const P = {};
+    const A = (id, g, s, sex, b, bq, d, dq, gen, x) => {
+      P[id] = Object.assign({ id: id, g: g, s: s, sex: sex, b: b, bq: bq || '', d: d == null ? null : d, dq: dq || '', gen: gen, photo: '', place: 'Київ', maiden: '', last: null, undated: false, rel: '', note: '' }, x || {});
+    };
+    A('k1', 'Іван', 'Коваленко', 'm', 1871, '', 1943, '', 1, { photo: '/_blob/54af88b6f881d5f4a84b74332a70daeb', place: 'Решетилівка' });
+    A('k2', 'Ганна', 'Коваленко', 'f', 1875, '~', 1950, '', 1, { photo: '/_blob/1193a028450388dfaf05757963481c0b', maiden: 'Шевчук', place: 'Решетилівка', note: 'Рік народження — зі слів доньки Марії, у метриці не знайдено.' });
+    A('k3', 'Федір', 'Коваленко', 'm', 1868, '~', 1920, '<', 1, { place: 'Решетилівка', note: 'Старший брат Івана. Згадується у листі 1919 року; у переписі 1926 року його вже немає.' });
+    A('k4', 'Петро', 'Коваленко', 'm', 1899, '', 1944, '', 2, { photo: '/_blob/e637420ae129725ab65f6647b285f642', place: 'Решетилівка' });
+    A('k5', 'Марія', 'Бондаренко', 'f', 1902, '', 1988, '', 2, { maiden: 'Коваленко', place: 'Решетилівка' });
+    A('k6', 'Олена', 'Коваленко', 'f', 1905, '', null, '?', 2, { last: 1928, place: 'Решетилівка', note: 'Виїхала до Канади 1928 року. Остання звістка — лист того ж року.' });
+    A('k7', 'Софія', 'Коваленко', 'f', 1903, '', 1979, '', 2, { photo: '/_blob/d10a08a3647c030ba9a5d4dab755972b', maiden: 'Мельник', place: 'Полтава' });
+    A('k8', 'Григорій', 'Бондаренко', 'm', 1898, '', 1941, '', 2, { place: 'Миргород' });
+    A('k9', 'Василь', 'Коваленко', 'm', 1926, '', 2001, '', 3, { photo: '/_blob/79f1475d5e9746b677a9b3a17d462732', note: 'Інженер-залізничник. Майже все життя прожив на Подолі; щоліта возив онуків до Решетилівки.' });
+    A('k10', 'Надія', 'Лисенко', 'f', 1930, '', 2015, '', 3, { maiden: 'Коваленко' });
+    A('k11', 'Ніна', 'Коваленко', 'f', 1931, '', 2010, '', 3, { maiden: 'Гуменюк', place: 'Житомир' });
+    A('k12', 'Микола', 'Бондаренко', 'm', 1922, '', 1987, '', 3, { place: 'Миргород' });
+    A('k13', 'Галина', 'Ткачук', 'f', 1925, '', 2019, '', 3, { maiden: 'Бондаренко', place: 'Миргород' });
+    A('k14', 'Віра', 'Бондаренко', 'f', 1927, '', 2008, '', 3, { place: 'Харків' });
+    A('k15', 'Степан', 'Ткачук', 'm', 1921, '', 1990, '', 3, { place: 'Львів' });
+    A('k16', 'Михайло', 'Лисенко', 'm', 1928, '', 1996, '', 3);
+    A('k17', 'Олександр', 'Коваленко', 'm', 1953, '', null, '', 4);
+    A('k18', 'Тетяна', 'Гнатюк', 'f', 1957, '', null, '', 4, { maiden: 'Коваленко' });
+    A('k19', 'Ірина', 'Шевченко', 'f', 1955, '', null, '', 4, { place: 'Львів' });
+    A('k20', 'Людмила', 'Коваленко', 'f', 1960, '', null, '', 4, { place: 'Чернігів' });
+    A('k21', 'Віктор', 'Гнатюк', 'm', 1954, '', null, '', 4);
+    A('k22', 'Сергій', 'Бондаренко', 'm', 1950, '', 2021, '', 4, { place: 'Харків' });
+    A('k23', 'Оксана', 'Бондаренко', 'f', 1952, '', null, '', 4, { place: 'Харків' });
+    A('k24', 'Леся', 'Мороз', 'f', 1948, '', null, '', 4, { maiden: 'Ткачук', place: 'Львів' });
+    A('k25', 'Богдан', 'Ткачук', 'm', 1951, '', 2018, '', 4, { place: 'Львів' });
+    A('k26', 'Юрій', 'Мороз', 'm', 1946, '', 2011, '', 4, { place: 'Львів' });
+    A('k27', 'Роман', 'Лисенко', 'm', 1955, '', null, '', 4);
+    A('k28', 'Наталія', 'Лисенко', 'f', 1958, '', null, '', 4);
+    A('k29', 'Христина', 'Лисенко', 'f', 1960, '', null, '', 4, { place: 'Тернопіль' });
+    A('k30', 'Андрій', 'Коваленко', 'm', 1980, '', null, '', 5, { photo: '/_blob/1d7903c32d3d6087e881115996e2dc8b' });
+    A('k31', 'Юлія', 'Коваленко', 'f', 1984, '', null, '', 5, { photo: '/_blob/dacda90026c5d6a6df5a84439490ca5d' });
+    A('k32', 'Дмитро', 'Коваленко', 'm', 1995, '', null, '', 5);
+    A('k33', 'Катерина', 'Коваленко', 'f', 1982, '', null, '', 5, { place: 'Вінниця' });
+    A('k34', 'Марина', 'Гнатюк', 'f', 1979, '', null, '', 5);
+    A('k35', 'Андрій', 'Бондаренко', 'm', 1976, '', null, '', 5, { place: 'Харків' });
+    A('k36', 'Ольга', 'Бондаренко', 'f', 1979, '', null, '', 5, { place: 'Харків' });
+    A('k37', 'Марта', 'Бондаренко', 'f', 1978, '', null, '', 5, { place: 'Харків' });
+    A('k38', 'Тарас', 'Лисенко', 'm', 1985, '', null, '', 5);
+    A('k39', 'Ігор', 'Савчук', 'm', 1983, '', null, '', 5, { place: 'Одеса' });
+    A('k40', 'Остап', 'Коваленко', 'm', 2008, '', null, '', 6);
+    A('k41', 'Злата', 'Коваленко', 'f', 2012, '', null, '', 6, { photo: '/_blob/c32511953c3c0fea5c0c0267803606f6' });
+    A('k42', 'Софія', 'Бондаренко', 'f', 2004, '', null, '', 6, { place: 'Харків' });
+    A('k43', 'Лука', 'Савчук', 'm', 2016, '', null, '', 6);
+    A('k44', 'Іванна', 'Ткачук', 'f', 1976, '', null, '', 5, { place: 'Львів' });
+    const U = (id, g, s, sex, rel, attach) => { P[id] = { id: id, g: g, s: s, sex: sex, b: null, bq: '', d: null, dq: '', gen: 0, photo: '', place: '', maiden: '', last: null, undated: true, rel: rel, attach: attach, note: 'Дати невідомі. Додайте рік, коли знайдете запис.' }; };
+    U('u1', 'Павло', 'Коваленко', 'm', 'син Федора', 'k3');
+    U('u2', 'Марфа', 'Шевчук', 'f', 'мати Ганни', 'k2');
+    U('u3', 'Яків', 'Мельник', 'm', 'батько Софії', 'k7');
+    U('u4', 'Онисим', 'Бондаренко', 'm', 'батько Григорія', 'k8');
+    U('u5', 'Параска', 'Гуменюк', 'f', 'мати Ніни', 'k11');
+    U('u6', '', '', 'f', 'дружина Федора', 'k3');
+    const C = [
+      { id: 'c1', a: 'k1', b: 'k2', t: 'm', s: 1897, e: null, kids: ['k4', 'k5', 'k6'] },
+      { id: 'c2', a: 'k4', b: 'k7', t: 'm', s: 1924, e: null, kids: ['k9', 'k10'] },
+      { id: 'c3', a: 'k8', b: 'k5', t: 'm', s: 1921, e: null, kids: ['k12', 'k13'] },
+      { id: 'c4', a: 'k9', b: 'k11', t: 'm', s: 1951, e: null, kids: ['k17', 'k18'] },
+      { id: 'c5', a: 'k12', b: 'k14', t: 'm', s: 1949, e: null, kids: ['k22'] },
+      { id: 'c6', a: 'k15', b: 'k13', t: 'm', s: 1946, e: null, kids: ['k24', 'k25'] },
+      { id: 'c7', a: 'k16', b: 'k10', t: 'm', s: 1952, e: null, kids: ['k27', 'k28'] },
+      { id: 'c8', a: 'k17', b: 'k19', t: 'div', s: 1978, e: 1990, kids: ['k30', 'k31'] },
+      { id: 'c9', a: 'k17', b: 'k20', t: 'm', s: 1993, e: null, kids: ['k32'] },
+      { id: 'c10', a: 'k21', b: 'k18', t: 'm', s: 1977, e: null, kids: ['k34'], adopt: { k34: 1983 } },
+      { id: 'c11', a: 'k22', b: 'k23', t: 'm', s: 1974, e: null, kids: ['k35', 'k36'] },
+      { id: 'c12', a: 'k26', b: 'k24', t: 'm', s: 1970, e: null, kids: [] },
+      { id: 'c13', a: 'k27', b: 'k29', t: 'm', s: 1983, e: null, kids: ['k38'] },
+      { id: 'c14', a: 'k30', b: 'k33', t: 'm', s: 2006, e: null, kids: ['k40', 'k41'] },
+      { id: 'c15', a: 'k35', b: 'k37', t: 'm', s: 2003, e: null, kids: ['k42'] },
+      { id: 'c16', a: 'k39', b: 'k31', t: 'p', s: 2010, e: null, kids: ['k43'] },
+      { id: 'c17', a: 'k25', b: null, t: 'none', s: null, e: null, kids: ['k44'] },
+      { id: 'c18', a: 'k3', b: 'u6', t: 'm', s: null, e: null, kids: ['u1'] }
+    ];
+    this._data = { P: P, C: C };
+    return this._data;
+  }
+  model() {
+    if (this._m) return this._m;
+    const D = this.data(), P = D.P;
+    const parents = {}, couplesOf = {}, kidsOf = {};
+    Object.keys(P).forEach((id) => { couplesOf[id] = []; kidsOf[id] = []; });
+    D.C.forEach((c) => {
+      [c.a, c.b].forEach((x) => { if (x) couplesOf[x].push(c); });
+      c.kids.forEach((k) => { parents[k] = [c.a, c.b].filter(Boolean); [c.a, c.b].forEach((x) => { if (x) kidsOf[x].push(k); }); });
+    });
+    const by = (id) => (P[id].b == null ? 9999 : P[id].b);
+    Object.keys(kidsOf).forEach((id) => kidsOf[id].sort((a, b) => by(a) - by(b)));
+    Object.keys(couplesOf).forEach((id) => couplesOf[id].sort((a, b) => (a.s || 9999) - (b.s || 9999)));
+    const dated = Object.keys(P).filter((id) => !P[id].undated);
+    const undated = Object.keys(P).filter((id) => P[id].undated);
+    this._m = { P: P, C: D.C, parents: parents, couplesOf: couplesOf, kidsOf: kidsOf, dated: dated, undated: undated };
+    return this._m;
+  }
+
+  /* ---------------------------------------------------------------- person helpers */
+  living(p) { return !p.undated && p.d == null && p.dq !== '?'; }
+  endY(p) { if (p.undated) return null; if (p.d != null) return p.d; return this.living(p) ? 2026 : null; }
+  softEnd(p) { const e = this.endY(p); return e != null ? e : Math.min(2026, p.b + 85); }
+  alive(p, y) {
+    if (p.undated || y < p.b) return 'no';
+    const e = this.endY(p);
+    if (e != null) return y <= e ? 'yes' : 'no';
+    if (y <= (p.last || p.b)) return 'yes';
+    return y <= p.b + 85 ? 'maybe' : 'no';
+  }
+  overlap(a, b) {
+    if (a.undated || b.undated) return 0;
+    const ea = this.endY(a) != null ? this.endY(a) : (a.last || a.b), eb = this.endY(b) != null ? this.endY(b) : (b.last || b.b);
+    return Math.max(0, Math.min(ea, eb) - Math.max(a.b, b.b));
+  }
+  fullName(p) { if (!p) return ''; if (!p.g && !p.s) return 'Невідома особа'; return [p.g, p.s].filter(Boolean).join(' '); }
+  initials(p) { if (!p.g && !p.s) return '?'; return ((p.g || '?')[0] + (p.s ? p.s[0] : '')).toUpperCase(); }
+  gv(p, m, f) { return p.sex === 'f' ? f : m; }
+  plural(n, one, few, many) { const a = n % 10, b = n % 100; if (a === 1 && b !== 11) return one; if (a >= 2 && a <= 4 && (b < 12 || b > 14)) return few; return many; }
+  yrs(n) { return n + ' ' + this.plural(n, 'рік', 'роки', 'років'); }
+  roman(n) { return ['', 'I', 'II', 'III', 'IV', 'V', 'VI'][n] || ''; }
+  yLabel(p) {
+    if (p.undated) return 'дати невідомі';
+    const b = (p.bq === '~' ? 'бл. ' : '') + p.b;
+    if (this.living(p)) return 'нар. ' + p.b;
+    if (p.dq === '?') return b + ' – ?';
+    const d = (p.dq === '<' ? 'до ' : p.dq === '~' ? 'бл. ' : '') + p.d;
+    return p.bq || p.dq ? b + ' – ' + d : b + '–' + d;
+  }
+  lifeText(p) {
+    if (p.undated) return 'дати невідомі';
+    if (this.living(p)) return this.yrs(2026 - p.b);
+    if (p.dq === '?') return 'рік смерті невідомий';
+    return (p.bq || p.dq ? '≈ ' : '') + this.yrs(p.d - p.b);
+  }
+  av(p) { const dec = !p.undated && !this.living(p); return { photo: p.photo || '', noPhoto: !p.photo, initials: this.initials(p), cls: (dec ? 'is-dec' : '') + (p.undated ? ' is-undated' : '') }; }
+  relation(xid, sid) {
+    if (xid === sid) return '';
+    const M = this.model(), x = M.P[xid];
+    const par = (id) => M.parents[id] || [];
+    const g = (m, f) => (x.sex === 'f' ? f : m);
+    if (par(sid).indexOf(xid) >= 0) return g('батько', 'мати');
+    for (const c of M.couplesOf[sid]) { const o = c.a === sid ? c.b : c.a; if (o === xid) return c.t === 'div' ? g('колишній чоловік', 'колишня дружина') : c.t === 'p' ? g('партнер', 'партнерка') : g('чоловік', 'дружина'); }
+    const kids = M.kidsOf[sid];
+    if (kids.indexOf(xid) >= 0) { const c = M.C.find((cc) => cc.kids.indexOf(xid) >= 0 && (cc.a === sid || cc.b === sid)); return c && c.adopt && c.adopt[xid] ? g('усиновлений син', 'усиновлена донька') : g('син', 'донька'); }
+    if (par(xid).some((q) => par(sid).indexOf(q) >= 0)) return g('брат', 'сестра');
+    const gp = [].concat.apply([], par(sid).map(par));
+    if (gp.indexOf(xid) >= 0) return g('дідусь', 'бабуся');
+    const gk = [].concat.apply([], kids.map((k) => M.kidsOf[k]));
+    if (gk.indexOf(xid) >= 0) return g('онук', 'онука');
+    const ggk = [].concat.apply([], gk.map((k) => M.kidsOf[k]));
+    if (ggk.indexOf(xid) >= 0) return g('правнук', 'правнучка');
+    if (x.undated && (x.attach === sid || par(sid).indexOf(x.attach) >= 0 || M.couplesOf[sid].some((c) => c.a === x.attach || c.b === x.attach))) return x.rel;
+    return '';
+  }
+  events(pid) {
+    const M = this.model(), out = [];
+    M.couplesOf[pid].forEach((c) => {
+      const o = c.a === pid ? c.b : c.a;
+      if (c.s) out.push({ y: c.s, k: c.t === 'p' ? 'p' : 'm', who: o });
+      if (c.t === 'div' && c.e) out.push({ y: c.e, k: 'div', who: o });
+      c.kids.forEach((kid) => { const ad = c.adopt && c.adopt[kid]; if (!ad && M.P[kid].undated) return; out.push({ y: ad || M.P[kid].b, k: ad ? 'adopt' : 'kid', who: kid }); });
+    });
+    return out.sort((a, b) => a.y - b.y);
+  }
+  evText(ev) {
+    const M = this.model(), q = M.P[ev.who];
+    if (ev.k === 'm') return 'шлюб · ' + this.fullName(q);
+    if (ev.k === 'p') return 'партнерство · ' + this.fullName(q);
+    if (ev.k === 'div') return 'розлучення · ' + this.fullName(q);
+    if (ev.k === 'adopt') return 'усиновлення · ' + q.g;
+    return this.gv(q, 'син ', 'донька ') + q.g;
+  }
+  count(y) {
+    const M = this.model(); let yes = 0, maybe = 0;
+    M.dated.forEach((id) => { const a = this.alive(M.P[id], y); if (a === 'yes') yes++; else if (a === 'maybe') maybe++; });
+    return { yes: yes, maybe: maybe };
+  }
+
+  /* ---------------------------------------------------------------- geometry builders */
+  segs(p, X, c0, c1, top, h, extra, focus) {
+    const live = this.living(p), tone = live ? 'is-live' : 'is-dec';
+    const parts = [];
+    if (p.dq === '?') { const last = p.last || p.b + 20; parts.push([p.b, last, 'is-r']); parts.push([last, p.b + 85, 'is-hatch']); }
+    else {
+      const e = this.endY(p); let a = p.b, z = e, tail = null, cls = '';
+      if (p.bq) { parts.push([p.b - 4, p.b + 3, 'is-hatch']); a = p.b + 3; cls += ' is-l'; }
+      if (p.dq === '<' || p.dq === '~') { tail = [e - 6, e, 'is-hatch']; z = e - 6; cls += ' is-r'; }
+      if (live) cls += ' is-r';
+      parts.push([a, z, cls]);
+      if (tail) parts.push(tail);
+    }
+    let pieces = [];
+    parts.forEach((pt) => {
+      let a = Math.max(pt[0], c0), z = Math.min(pt[1], c1), cls = pt[2];
+      if (z <= a) return;
+      if (pt[0] < c0) cls += ' is-l';
+      if (pt[1] > c1) cls += ' is-r';
+      if (focus) {
+        const cuts = [a, Math.max(a, Math.min(z, focus[0])), Math.max(a, Math.min(z, focus[1])), z];
+        for (let i = 0; i < 3; i++) { if (cuts[i + 1] - cuts[i] <= 0) continue; pieces.push([cuts[i], cuts[i + 1], cls + (i === 1 ? '' : ' is-faint') + (i > 0 ? ' is-l' : '') + (i < 2 && cuts[i + 1] < z ? ' is-r' : '')]); }
+      } else pieces.push([a, z, cls]);
+    });
+    return pieces.map((pc) => ({ x: Math.round(X(pc[0]) * 10) / 10, w: Math.max(2, Math.round((X(pc[1]) - X(pc[0])) * 10) / 10), y: top, h: h, cls: 'tl-seg ' + tone + ' ' + pc[2] + ' ' + (extra || '') }));
+  }
+  marks(p, X, cy, c0, c1, small) {
+    const out = [], end = this.softEnd(p);
+    this.events(p.id).forEach((ev) => { if (ev.y < c0 || ev.y > c1 || ev.y < p.b || ev.y > end) return; out.push({ x: Math.round(X(ev.y + 0.5)), y: cy, cls: 'tl-mk is-' + ev.k + (small ? ' is-sm' : ''), t: '' }); });
+    if (this.living(p) && c1 >= 2026) out.push({ x: Math.round(X(2026)) + 1, y: cy, cls: 'tl-mk is-cap', t: '' });
+    if (p.dq === '?' && p.b + 85 <= c1) out.push({ x: Math.round(X(p.b + 85)), y: cy, cls: 'tl-mk is-q', t: '?' });
+    return out;
+  }
+  est(t, cw) { return Math.round(String(t).length * (cw || 6.3)) + 6; }
+  sideLab(p, X, G, text, cls, cw) {
+    const w = this.est(text, cw), sx = X(Math.max(p.b, G.y0)), ex = X(Math.min(this.softEnd(p), G.y1)) + (this.living(p) || p.dq === '?' ? 14 : 0);
+    const opt = { r: ex + 8, l: sx - 8, w: w, rOk: ex + 8 + w <= G.R + 20, lOk: sx - 8 - w >= G.L, base: cls };
+    if (opt.rOk) return { x: Math.round(ex + 8), cls: cls, text: text, sub: '', opt: opt };
+    return { x: Math.round(sx - 8), cls: cls + ' is-left', text: text, sub: '', opt: opt };
+  }
+  personRow(p, o, ctx) {
+    const isSel = p.id === ctx.sel, rel = ctx.rels[p.id] || '';
+    const al = p.undated ? 'no' : this.alive(p, ctx.hy);
+    const G = ctx.G, X = G.X;
+    const c0 = o.c0 != null ? o.c0 : G.y0, c1 = o.c1 != null ? o.c1 : G.y1;
+    const barTop = o.barTop != null ? o.barTop : Math.round((o.h - o.barH) / 2);
+    const cy = barTop + o.barH / 2;
+    const segs = p.undated ? [] : this.segs(p, X, c0, c1, barTop, o.barH, (isSel && !o.noRing ? 'is-selring ' : '') + (o.segCls || ''), o.focus);
+    const marks = p.undated ? [] : this.marks(p, X, cy, c0, c1, o.small);
+    const labs = (o.labs || []).slice();
+    if (rel && !isSel && !p.undated && o.relLab) labs.push(this.sideLab(p, X, G, rel, 'tl-lab is-rel'));
+    if (isSel) ctx.bgs.push({ top: o.top, h: o.h, cls: 'tl-bg is-sel' }); else if (rel && !o.noRelBg) ctx.bgs.push({ top: o.top, h: o.h, cls: 'tl-bg is-rel' });
+    const row = {
+      key: p.id, pid: p.id, top: o.top, h: o.h, isBand: false, isGroup: false, isPerson: true,
+      cls: 'tl-row' + (isSel ? ' is-sel' : '') + (al === 'no' && !p.undated ? ' is-dim' : '') + (p.undated ? ' is-undated' : ''),
+      hasName: o.nameW != null, nameX: o.nameX || 0, nameW: o.nameW || 0, nameStyle: o.nameStyle || '',
+      name: this.fullName(p), years: this.yLabel(p), showYears: !!o.years,
+      aria: this.fullName(p) + ', ' + this.yLabel(p) + (rel ? ', ' + rel : ''),
+      av: this.av(p), pmark: o.pmark || '', hasPmark: !!o.pmark, guides: o.guides || [],
+      segs: segs, marks: marks, labs: labs, btns: o.btns || [], ticks: o.ticks || [],
+      hasUnd: !!(p.undated && o.undX != null), undX: o.undX || 0, undText: p.undated ? p.rel + ' · без дат' : '',
+      select: () => this.select(p.id), cy: cy
+    };
+    return row;
+  }
+  select(id) { if (this.state.sel !== id) this.setState({ sel: id }); }
+
+  /* ---------------------------------------------------------------- variants */
+  bandRow(key, top, h, label, sub) {
+    return { key: key, top: top, h: h, isBand: true, isGroup: false, isPerson: false, cls: 'tl-row', av: {}, bandLabel: label, bandSub: sub, guides: [], segs: [], marks: [], labs: [], btns: [], ticks: [] };
+  }
+  buildV1(ctx, phone) {
+    const M = ctx.M, G = ctx.G, rows = [];
+    const pitch = phone ? 34 : 18, barH = phone ? 7 : 8, barTop = phone ? 23 : 5, bandH = phone ? 30 : 26;
+    const people = (n) => n + ' ' + this.plural(n, 'людина', 'людини', 'людей');
+    let top = 0;
+    const band = (key, label, sub) => { rows.push(this.bandRow(key, top, bandH, label, sub)); ctx.bgs.push({ top: top, h: bandH, cls: 'tl-bg is-band' }); top += bandH; };
+    const person = (id, extra) => {
+      const o = Object.assign({ top: top, h: pitch, barH: barH, barTop: barTop, nameX: phone ? 12 : 24, nameW: phone ? null : G.L - 8 - 24, years: !phone, relLab: !phone, small: phone }, extra || {});
+      const r = this.personRow(M.P[id], o, ctx);
+      if (phone) r.hasName = false;
+      rows.push(r); top += pitch;
+    };
+    for (let g = 1; g <= 6; g++) {
+      const ids = M.dated.filter((id) => M.P[id].gen === g).sort((a, b) => M.P[a].b - M.P[b].b);
+      if (!ids.length) continue;
+      const bs = ids.map((id) => M.P[id].b);
+      band('g' + g, this.roman(g) + ' покоління', 'нар. ' + Math.min.apply(null, bs) + '–' + Math.max.apply(null, bs) + ' · ' + people(ids.length));
+      ids.forEach((id) => person(id));
+    }
+    if (M.undated.length) {
+      band('und', 'Без відомих дат', people(M.undated.length));
+      M.undated.forEach((id) => person(id, { undX: phone ? 20 : G.L + 6 }));
+    }
+    if (!phone) this.placeLabels(rows, [], G);
+    return { rows: rows, height: top + 12 };
+  }
+  buildV2(ctx, phone) {
+    const M = ctx.M, P = M.P, rows = [], idx = {}, seen = {};
+    const pitch = phone ? 34 : 18, barH = phone ? 7 : 8, barTop = phone ? 23 : 5;
+    let top = 0;
+    const add = (pid, depth, kind, couple) => {
+      const p = P[pid];
+      const nameX = phone ? 12 + depth * 10 : 22 + depth * 10;
+      const guides = []; for (let i = 0; i < depth; i++) guides.push({ x: phone ? 7 + i * 10 : 16 + i * 10 });
+      const pmark = kind === 'partner' ? 'tl-pmark' + (couple && couple.t === 'p' ? ' is-p' : couple && couple.t === 'div' ? ' is-div' : '') : '';
+      const o = { top: top, h: pitch, barH: barH, barTop: barTop, nameX: nameX, nameW: phone ? null : ctx.G.L - 8 - nameX, years: !phone, relLab: !phone, guides: guides, pmark: pmark, undX: phone ? 12 + depth * 10 + 8 : ctx.G.L + 6, small: phone };
+      if (phone) o.nameW = null;
+      const r = this.personRow(p, o, ctx);
+      if (phone) { r.hasName = false; r.nameX = nameX + (pmark ? 0 : 0); }
+      rows.push(r); idx[pid] = r; seen[pid] = true; top += pitch;
+    };
+    const attachUndated = (pid, depth) => { M.undated.forEach((u) => { if (P[u].attach === pid && !seen[u] && !M.parents[u]) add(u, depth, P[u].rel.indexOf('дружина') === 0 ? 'partner' : 'und', null); }); };
+    const visit = (pid, depth) => {
+      if (seen[pid]) return;
+      add(pid, depth, 'blood', null);
+      attachUndated(pid, depth);
+      const cs = M.couplesOf[pid];
+      cs.forEach((c) => { const o = c.a === pid ? c.b : c.a; if (o && !seen[o]) { add(o, depth, 'partner', c); attachUndated(o, depth); } });
+      cs.forEach((c) => c.kids.slice().sort((a, b) => P[a].b - P[b].b).forEach((k) => visit(k, depth + 1)));
+    };
+    visit('k3', 0); visit('k1', 0);
+    // couple ties + descent connectors (desktop only: on a phone, indentation carries the branches)
+    const X = ctx.G.X;
+    if (!phone) M.C.forEach((c) => {
+      const ra = idx[c.a], rb = c.b ? idx[c.b] : null;
+      const selC = c.a === ctx.sel || c.b === ctx.sel;
+      if (ra && rb && c.s) { const t = Math.min(ra.top, rb.top) + ra.cy, bt = Math.max(ra.top, rb.top) + rb.cy; ctx.conns.push({ x: Math.round(X(c.s + 0.5)) - 1, top: t, h: bt - t, cls: 'tl-conn is-tie' + (selC ? ' is-sel' : '') }); }
+      const anchor = rb && rb.top > ra.top ? rb : ra;
+      c.kids.forEach((k) => {
+        const kr = idx[k]; if (!kr || P[k].undated) return;
+        const ad = c.adopt && c.adopt[k];
+        const x = Math.round(X((ad || P[k].b) + 0.5));
+        const t = anchor.top + anchor.cy + barH / 2 + 1, bt = kr.top + kr.cy;
+        if (bt > t) ctx.conns.push({ x: x, top: t, h: bt - t, cls: 'tl-conn' + (ad ? ' is-adopt' : '') + (selC || k === ctx.sel ? ' is-sel' : '') });
+      });
+    });
+    this.placeUndated(rows, ctx.conns);
+    if (!phone) this.placeLabels(rows, ctx.conns, ctx.G);
+    return { rows: rows, height: top + 12 };
+  }
+  placeLabels(rows, conns, G) {
+    const today = G.y1 >= 2026 ? G.X(2026) : null;
+    rows.forEach((r) => (r.labs || []).forEach((lab) => {
+      const o = lab.opt; if (!o) return;
+      const obs = conns.filter((c) => c.top < r.top + r.h - 2 && c.top + c.h > r.top + 2).map((c) => c.x);
+      if (today != null) obs.push(today);
+      const free = (a, z) => !obs.some((x) => x > a - 3 && x < z + 3);
+      const cands = [];
+      if (o.rOk) cands.push([o.r, false]);
+      if (o.lOk) cands.push([o.l, true]);
+      obs.slice().sort((a, b) => a - b).forEach((x) => { if (x + 5 > o.r && x + 5 + o.w <= G.R + 20) cands.push([x + 5, false]); });
+      obs.slice().sort((a, b) => b - a).forEach((x) => { if (x - 5 < o.l && x - 5 - o.w >= G.L) cands.push([x - 5, true]); });
+      const hit = cands.find((c) => (c[1] ? free(c[0] - o.w, c[0]) : free(c[0], c[0] + o.w)));
+      if (hit) { lab.x = Math.round(hit[0]); lab.cls = o.base + (hit[1] ? ' is-left' : ''); }
+    }));
+  }
+  placeUndated(rows, conns) {
+    // a dateless row has no bar; keep its "батько Софії · без дат" pill off the descent lines that cross it
+    rows.forEach((r) => {
+      if (!r.hasUnd) return;
+      const w = this.est(r.undText, 6.2) + 18;
+      const xs = conns.filter((c) => c.top < r.top + r.h && c.top + c.h > r.top).map((c) => c.x).sort((a, b) => a - b);
+      let x = r.undX;
+      xs.forEach((cx) => { if (cx >= x - 5 && cx <= x + w + 5) x = cx + 9; });
+      r.undX = Math.round(x);
+    });
+  }
+  buildV3(ctx) {
+    const M = ctx.M, G = ctx.G, X = G.X, rows = [];
+    const ids = M.dated.slice().sort((a, b) => M.P[a].b - M.P[b].b);
+    let top = 0;
+    ids.forEach((id) => {
+      const p = M.P[id], name = this.fullName(p), yl = this.yLabel(p);
+      const w = this.est(name, 6.9) + this.est(yl, 6) + 6;
+      const sx = X(p.b - (p.bq ? 4 : 0)), ex = X(this.softEnd(p) + (p.dq === '?' ? 0 : 0)) + (this.living(p) || p.dq === '?' ? 14 : 0);
+      let lab;
+      if (sx - 10 - w >= G.L) lab = { x: Math.round(sx - 10), cls: 'tl-lab is-name is-left', text: name, sub: yl };
+      else lab = { x: Math.round(ex + 8), cls: 'tl-lab is-name', text: name, sub: yl };
+      lab.select = () => this.select(id); lab.aria = name + ', ' + yl;
+      rows.push(this.personRow(p, { top: top, h: 22, barH: 4, btns: [lab], relLab: false }, ctx));
+      top += 22;
+    });
+    return { rows: rows, height: top + 12 };
+  }
+  buildV4(ctx) {
+    const M = ctx.M, G = ctx.G, X = G.X, rows = [];
+    const r0 = ctx.brush[0], r1 = ctx.brush[1] + 1;
+    const ids = M.dated.filter((id) => { const p = M.P[id]; return p.b < r1 && this.softEnd(p) >= r0; }).sort((a, b) => M.P[a].b - M.P[b].b);
+    let top = 0;
+    ids.forEach((id) => {
+      const p = M.P[id], name = this.fullName(p), yl = this.yLabel(p), live = this.living(p);
+      const a = Math.max(p.b, r0), z = Math.min(this.softEnd(p), r1);
+      const bw = X(z) - X(a), need = this.est(name, 7) + this.est(yl, 6) + 22;
+      let lab;
+      if (bw >= need) lab = { x: Math.round(X(a) + (p.b < r0 ? 14 : 8)), cls: 'tl-lab is-name is-inside' + (live ? '' : ' is-dark'), text: (p.b < r0 ? '‹ ' : '') + name, sub: yl };
+      else if (X(z) + 10 + need <= G.R) lab = { x: Math.round(X(z) + (live ? 16 : 8)), cls: 'tl-lab is-name', text: name, sub: yl };
+      else lab = { x: Math.round(X(a) - 8), cls: 'tl-lab is-name is-left', text: name, sub: yl };
+      lab.select = () => this.select(id); lab.aria = name + ', ' + yl;
+      rows.push(this.personRow(p, { top: top, h: 24, barH: 17, c0: r0, c1: r1, btns: [lab], segCls: 'is-big', relLab: false }, ctx));
+      top += 24;
+    });
+    return { rows: rows, height: top + 12, n: ids.length };
+  }
+  buildV5(ctx) {
+    const M = ctx.M, P = M.P, sid = ctx.sel, me = P[sid], G = ctx.G, rows = [];
+    const sort = (arr) => arr.filter(Boolean).sort((a, b) => a.b - b.b);
+    const par = sort((M.parents[sid] || []).map((id) => P[id]));
+    const partners = M.couplesOf[sid].map((c) => P[c.a === sid ? c.b : c.a]).filter(Boolean);
+    const sibIds = {}; (M.parents[sid] || []).forEach((q) => M.kidsOf[q].forEach((k) => { if (k !== sid) sibIds[k] = 1; }));
+    const sibs = sort(Object.keys(sibIds).map((id) => P[id]));
+    const kids = sort(M.kidsOf[sid].map((id) => P[id]));
+    const gk = sort([].concat.apply([], kids.map((k) => M.kidsOf[k.id])).map((id) => P[id]));
+    const ggk = sort([].concat.apply([], gk.map((k) => M.kidsOf[k.id])).map((id) => P[id]));
+    const pl = partners.length === 1 ? (me.sex === 'm' ? (M.couplesOf[sid][0].t === 'p' ? 'Партнерка' : 'Дружина') : 'Чоловік') : 'Подружжя';
+    const sl = sibs.length === 1 ? (sibs[0].sex === 'f' ? 'Сестра' : 'Брат') : 'Брати й сестри';
+    const groups = [['Батьки', par], [null, [me]], [pl, partners], [sl, sibs], ['Діти', kids], ['Онуки', gk], ['Правнуки', ggk]];
+    const meEnd = this.softEnd(me);
+    let top = 0;
+    groups.forEach((gr) => {
+      if (!gr[1].length) return;
+      if (gr[0]) { rows.push({ key: 'h-' + gr[0], top: top, h: 18, isBand: false, isGroup: true, cls: 'tl-row', av: {}, bandLabel: gr[0], guides: [], segs: [], marks: [], labs: [], btns: [], ticks: [] }); top += 18; }
+      gr[1].forEach((p) => {
+        const self = p.id === sid;
+        const o = { top: top, h: self ? 42 : 22, barH: self ? 14 : 6, barTop: self ? 20 : 8, nameX: 24, nameW: 196, years: false, relLab: false, noRelBg: true, noRing: true };
+        if (self) {
+          o.ticks = []; for (let a = 10; p.b + a <= meEnd; a += 10) o.ticks.push({ x: Math.round(G.X(p.b + a)), t: a });
+          o.nameStyle = 'font-size: 16px';
+        } else {
+          o.focus = [me.b, meEnd];
+          const ov = this.overlap(p, me);
+          o.labs = [{ x: G.R + 12, cls: 'tl-lab is-overlap' + (ov ? '' : ' is-none'), text: ov ? 'разом ' + this.yrs(ov) : 'не зустрілися', sub: '' }];
+        }
+        rows.push(this.personRow(p, o, ctx));
+        top += o.h;
+      });
+    });
+    return { rows: rows, height: top + 8 };
+  }
+  story(ctx) {
+    const M = ctx.M, P = M.P, sid = ctx.sel, p = P[sid], end = this.softEnd(p), items = [];
+    const ageAt = (y) => (p.bq ? '~' : '') + (y - p.b) + ' р.';
+    items.push({ y: p.b, t: this.gv(p, 'Народився', 'Народилася') + (p.place ? ' · ' + p.place : ''), g: 'tl-mk is-birth', k: 0 });
+    (M.parents[sid] || []).forEach((id) => { const q = P[id]; if (q.d && q.d >= p.b && q.d <= end) items.push({ y: q.d, t: (q.sex === 'f' ? 'Померла мати — ' : 'Помер батько — ') + this.fullName(q), g: 'tl-mk is-death', k: 1 }); });
+    this.events(sid).forEach((ev) => {
+      if (ev.y > end) return;
+      const q = P[ev.who];
+      let t;
+      if (ev.k === 'm') t = 'Шлюб — ' + this.fullName(q);
+      else if (ev.k === 'p') t = 'Партнерство — ' + this.fullName(q);
+      else if (ev.k === 'div') t = 'Розлучення — ' + this.fullName(q);
+      else if (ev.k === 'adopt') t = 'Усиновлення — ' + q.g;
+      else t = (q.sex === 'f' ? 'Народилася донька — ' : 'Народився син — ') + q.g;
+      items.push({ y: ev.y, t: t, g: 'tl-mk is-' + ev.k, k: 1 });
+    });
+    M.kidsOf[sid].forEach((k) => M.kidsOf[k].forEach((g) => {
+      const q = P[g], c = M.C.find((cc) => cc.kids.indexOf(g) >= 0), ad = c && c.adopt && c.adopt[g], y = ad || q.b;
+      if (y > end) return;
+      items.push({ y: y, t: ad ? (q.sex === 'f' ? 'Усиновлена онука — ' : 'Усиновлений онук — ') + q.g : (q.sex === 'f' ? 'Народилася онука — ' : 'Народився онук — ') + q.g, g: ad ? 'tl-mk is-adopt' : 'tl-mk is-kid', k: 1 });
+    }));
+    this.hist().forEach((hh) => { if (hh.b <= end && hh.e >= p.b) items.push({ y: hh.b, ye: hh.e, t: hh.t, g: 'tl-mk is-hist', k: 2, hist: true }); });
+    if (p.d) items.push({ y: p.d, t: this.gv(p, 'Помер', 'Померла') + (p.place ? ' · ' + p.place : ''), g: 'tl-mk is-death', k: 3 });
+    items.sort((a, b) => a.y - b.y || a.k - b.k);
+    return items.map((it) => ({
+      y: it.ye && it.ye !== it.y ? it.y + '–' + (it.ye >= 2026 ? '…' : String(it.ye).slice(2)) : String(it.y),
+      a: it.ye && it.ye !== it.y ? (it.y - p.b) + '–' + (Math.min(it.ye, end) - p.b) + ' р.' : ageAt(it.y),
+      t: it.t, g: it.g, cls: (it.hist ? 'is-hist' : '') + (ctx.hy >= it.y && ctx.hy <= (it.ye || it.y) ? ' is-hov' : '')
+    }));
+  }
+  tipVals(pid, ctx, x, cyPlot, viewH, side) {
+    const M = ctx.M, p = M.P[pid], hy = ctx.hy;
+    if (!p || p.undated) return { show: false, av: {}, evs: [] };
+    const al = this.alive(p, hy);
+    let now, nowCls = '';
+    if (al === 'yes') now = 'У ' + hy + ' — ' + (p.bq ? 'бл. ' : '') + this.yrs(hy - p.b) + (hy === p.d ? ' · рік смерті' : '');
+    else if (al === 'maybe') { now = 'У ' + hy + ' — невідомо, чи ' + this.gv(p, 'живий', 'жива') + ' (було б ' + this.yrs(hy - p.b) + ')'; nowCls = 'is-muted'; }
+    else if (hy < p.b) { now = 'У ' + hy + ' ще не ' + this.gv(p, 'народився', 'народилася'); nowCls = 'is-muted'; }
+    else { now = 'У ' + hy + ' вже не ' + this.gv(p, 'жив', 'жила') + ' · ' + this.gv(p, 'помер ', 'померла ') + (p.dq === '<' ? 'до ' : '') + p.d; nowCls = 'is-muted'; }
+    const evs = this.events(pid).filter((e) => e.y <= this.softEnd(p));
+    const tipX = side === 'left' ? Math.round(x - 18 - 268) : Math.round(x + ctx.G.k + 14);
+    const tipY = Math.round(Math.max(6, Math.min(cyPlot - 150, viewH - 200)));
+    return {
+      show: true, x: tipX, y: tipY, name: this.fullName(p), years: this.yLabel(p) + ' · ' + this.lifeText(p), now: now, nowCls: nowCls, av: this.av(p),
+      evs: evs.slice(0, 4).map((e) => ({ cls: 'tl-mk is-' + e.k, y: String(e.y), t: this.evText(e) })),
+      more: evs.length > 4 ? 'і ще ' + (evs.length - 4) + ' ' + this.plural(evs.length - 4, 'подія', 'події', 'подій') : ''
+    };
+  }
+  panelVals(ctx) {
+    const M = ctx.M, P = M.P, sid = ctx.sel, p = P[sid];
+    const facts = [];
+    if (!p.undated) {
+      facts.push({ k: this.gv(p, 'Народився', 'Народилася'), v: (p.bq ? 'бл. ' : '') + p.b + (p.place ? ', ' + p.place : '') });
+      if (p.d != null) facts.push({ k: this.gv(p, 'Помер', 'Померла'), v: (p.dq === '<' ? 'до ' : '') + p.d + (p.dq ? '' : (p.place ? ', ' + p.place : '')) });
+      else if (p.dq === '?') facts.push({ k: this.gv(p, 'Помер', 'Померла'), v: 'рік невідомий · остання звістка ' + p.last });
+    } else facts.push({ k: 'Дати', v: 'невідомі' });
+    const ov = M.dated.filter((id) => id !== sid && this.overlap(P[id], p) > 0);
+    const gens = ov.map((id) => P[id].gen).concat(p.undated ? [] : [p.gen]);
+    const chron = [];
+    if (!p.undated) {
+      if (this.living(p)) chron.push('Зараз ' + this.yrs(2026 - p.b));
+      else if (p.dq === '?') chron.push('Рік смерті невідомий · остання звістка ' + p.last);
+      else chron.push(this.gv(p, 'Прожив ', 'Прожила ') + (p.bq || p.dq ? 'приблизно ' : '') + this.yrs(p.d - p.b));
+      chron.push('Сучасників в архіві: ' + ov.length + ' — жили в ті самі роки');
+      const g0 = Math.min.apply(null, gens), g1 = Math.max.apply(null, gens), n = g1 - g0 + 1;
+      chron.push('Поколінь за життя: ' + n + ' (' + this.roman(g0) + '–' + this.roman(g1) + ')');
+    }
+    const fam = [];
+    const push = (id) => { const q = P[id]; if (!q) return; fam.push({ name: this.fullName(q), years: this.yLabel(q), rel: this.relation(id, sid), av: this.av(q) }); };
+    (M.parents[sid] || []).forEach(push);
+    M.couplesOf[sid].forEach((c) => push(c.a === sid ? c.b : c.a));
+    M.kidsOf[sid].forEach(push);
+    const sibs = {}; (M.parents[sid] || []).forEach((q) => M.kidsOf[q].forEach((k) => { if (k !== sid) sibs[k] = 1; }));
+    Object.keys(sibs).forEach(push);
+    const al = this.alive(p, ctx.hy);
+    return {
+      name: this.fullName(p), aka: p.maiden ? (p.sex === 'f' ? 'дівоче прізвище ' : 'при народженні ') + p.maiden : '',
+      years: this.yLabel(p) + ' · ' + this.lifeText(p), facts: facts, chron: chron, fam: fam.slice(0, 7), av: this.av(p),
+      note: p.note || 'Нотаток поки немає.',
+      atYear: p.undated ? '' : al === 'yes' ? 'у ' + ctx.hy + ' — ' + this.yrs(ctx.hy - p.b) : al === 'maybe' ? 'у ' + ctx.hy + ' — невідомо' : ctx.hy < p.b ? 'у ' + ctx.hy + ' ще не ' + this.gv(p, 'народився', 'народилася') : 'у ' + ctx.hy + ' вже не ' + this.gv(p, 'жив', 'жила')
+    };
+  }
+
+  /* ---------------------------------------------------------------- interaction */
+  scrollRef() {
+    if (!this._scrollRef) this._scrollRef = (el) => { this.scrollEl = el; };
+    return this._scrollRef;
+  }
+  histRef() {
+    if (!this._histRef) this._histRef = (el) => { this.histEl = el; };
+    return this._histRef;
+  }
+  onMove(e) {
+    const el = e.currentTarget, g = this._geo;
+    if (!el || !g) return;
+    const r = el.getBoundingClientRect(), ratio = el.offsetWidth / (r.width || 1);
+    const x = (e.clientX - r.left) * ratio, y = (e.clientY - r.top) * ratio + el.scrollTop;
+    const row = g.rows.find((rw) => rw.pid && y >= rw.top && y < rw.top + rw.h);
+    const hp = row ? row.pid : null;
+    if (x < g.L - 4) { if (this.state.hy != null || this.state.hp !== hp) this.setState({ hy: null, hp: hp }); return; }
+    let yr = Math.floor(g.y0 + (x - g.L) / g.k);
+    yr = Math.max(g.y0, Math.min(2026, yr));
+    if (yr !== this.state.hy || hp !== this.state.hp) this.setState({ hy: yr, hp: hp });
+  }
+  onLeave() { if (this.state.hy != null || this.state.hp != null) this.setState({ hy: null, hp: null }); }
+  onPlotClick() { const hp = this.state.hp; if (this.legendOpen()) this.setState({ legend: false }); if (hp) this.select(hp); }
+  legendOpen() { const s = this.state, p = this.props || {}; return s.legend != null ? s.legend : p.legend === 'open'; }
+  toggleLegend() { this.setState({ legend: !this.legendOpen() }); }
+  closeLegend() { this.setState({ legend: false }); }
+  groupPick(k) {
+    if (!this._gp) this._gp = {};
+    if (!this._gp[k]) this._gp[k] = () => { if (this.state.group !== k) this.setState({ group: k }); };
+    return this._gp[k];
+  }
+  onKey(e) {
+    const t = e.target, typing = t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable);
+    if (e.key === 'Escape' && this.legendOpen()) { e.preventDefault(); this.setState({ legend: false }); return; }
+    if (typing || e.metaKey || e.ctrlKey || e.altKey) return;
+    if (e.key === 'l' || e.key === 'L' || e.key === 'д' || e.key === 'Д') { e.preventDefault(); this.toggleLegend(); }
+  }
+  histClick(e) {
+    const el = e.currentTarget, g = this._ovGeo;
+    if (!el || !g) return;
+    const r = el.getBoundingClientRect(), ratio = el.offsetWidth / (r.width || 1);
+    const yr = Math.floor(g.y0 + ((e.clientX - r.left) * ratio - g.L) / g.k);
+    const a = Math.max(1865, Math.min(2026 - 40, yr - 20));
+    this.setState({ brush: [a, a + 40] });
+  }
+
+  /* ---------------------------------------------------------------- render */
+  renderVals() {
+    const raw = this.props || {}, s = this.state, M = this.model(), P = M.P;
+    const props = Object.assign({}, raw);
+    [['hoverYear', 'hoveryear', 'hover-year'], ['closeW', 'closew', 'close-w'], ['closeH', 'closeh', 'close-h'], ['closeScale', 'closescale', 'close-scale'], ['closeX', 'closex', 'close-x'], ['closeY', 'closey', 'close-y']].forEach((n) => { if (props[n[0]] == null) props[n[0]] = raw[n[1]] != null ? raw[n[1]] : raw[n[2]]; });
+    const v = Math.max(1, Math.min(5, Number(props.variant) || 2));
+    const phone = props.device === 'phone';
+    const theme = props.theme === 'dark' ? 'dark' : 'light';
+    const panel = !phone && !(props.panel === false || props.panel === 'false');
+    const pinY = Number(props.hoverYear) || 1944;
+    const hovering = s.hy != null;
+    const hy = hovering ? s.hy : pinY;
+    const sel = P[s.sel] ? s.sel : 'k9';
+    const tipPid = hovering ? s.hp : (props.tip === 'none' ? null : (props.tip || sel));
+    const rels = {}; Object.keys(P).forEach((id) => { const r = this.relation(id, sel); if (r) rels[id] = r; });
+    const frameW = phone ? 390 : 1440, frameH = phone ? 844 : 900;
+    const mainW = phone ? 390 : (panel ? 1040 : 1440);
+    const ctx = { M: M, hy: hy, sel: sel, rels: rels, bgs: [], conns: [], ages: [], brush: s.brush };
+    // «Групувати»: variants 1 and 2 are one page with two tabs — Гілки (default) and Покоління
+    const tabbed = v === 1 || v === 2;
+    const grp = s.group || (props.group === 'gen' || props.group === 'branch' ? props.group : (v === 1 ? 'gen' : 'branch'));
+    const useGen = (phone || tabbed) && grp === 'gen';
+
+    // geometry per variant
+    let L, R, y0 = 1865, y1 = 2030, extra = 0;
+    if (phone) { L = 12; R = 378; }
+    else if (tabbed) { L = 344; R = mainW - 24; }
+    else if (v === 3) { L = 24; R = mainW - 24; extra = 44; }
+    else if (v === 4) { L = 24; R = mainW - 24; extra = 156; y0 = s.brush[0]; y1 = s.brush[1] + 1; }
+    else { L = 232; R = mainW - 24 - 104; }
+    if (v === 5 && !phone) {
+      const me = P[sel];
+      const fam = [].concat(M.parents[sel] || [], M.kidsOf[sel]).map((id) => P[id]).filter((q) => q && !q.undated);
+      const minB = Math.min.apply(null, fam.map((q) => q.b).concat([me.b || 1900]));
+      y0 = Math.floor((minB - 4) / 5) * 5; y1 = 2030;
+    }
+    const k = (R - L) / (y1 - y0);
+    const X = (y) => L + (y - y0) * k;
+    const G = { L: L, R: R, y0: y0, y1: y1, k: k, X: X };
+    ctx.G = G;
+
+    let built;
+    if (phone) built = useGen ? this.buildV1(ctx, true) : this.buildV2(ctx, true);
+    else if (tabbed) built = useGen ? this.buildV1(ctx, false) : this.buildV2(ctx, false);
+    else if (v === 3) built = this.buildV3(ctx);
+    else if (v === 4) built = this.buildV4(ctx);
+    else built = this.buildV5(ctx);
+    const rows = built.rows;
+    this._geo = { L: L, k: k, y0: y0, rows: rows.map((r) => ({ pid: r.pid, top: r.top, h: r.h })) };
+
+    // vertical layout of the main column
+    const headBottom = 64; // the key now lives behind the «Легенда» button
+    const laneTop = headBottom, ovTop = headBottom;
+    const axisTop = phone ? 96 : headBottom + extra;
+    const scrollTop = phone ? 122 : axisTop + 28;
+    const storyH = v === 5 && !phone ? 254 : 0;
+    const dockH = !phone && v === 3 ? 52 : 0;
+    const scrollBottom = phone ? 0 : dockH + storyH;
+    const viewH = (phone ? 844 - 92 - 122 : 844 - scrollTop - scrollBottom);
+
+    // axis + grid
+    const step = phone ? 20 : v === 4 ? 5 : 10;
+    const ticks = [], grids = [];
+    for (let y = Math.ceil(y0 / step) * step; y <= Math.min(y1, 2020); y += step) {
+      const major = y % (v === 4 ? 10 : step) === 0;
+      ticks.push({ x: Math.round(X(y)), t: String(y), cls: major ? '' : 'is-minor' });
+      grids.push({ x: Math.round(X(y)), cls: y % 100 === 0 ? 'is-century' : '' });
+    }
+    const showToday = y1 >= 2026;
+
+    // hover year
+    const cnt = this.count(hy);
+    const evNow = this.hist().find((e) => hy >= e.b && hy <= e.e);
+    const pillText = 'живі: ' + cnt.yes + (cnt.maybe ? ' · ще ' + cnt.maybe + ' — невідомо' : '') + (v === 3 && evNow && !phone ? ' · ' + evNow.t : ''); // the year itself is on the badge beside it
+    const hbx = Math.round(X(hy) * 10) / 10;
+    const hb = { x: hbx, w: Math.max(2, Math.round(k * 10) / 10), cx: Math.round(X(hy + 0.5)) };
+    const rb = { x: Math.round(X(hy + 0.5)), t: String(hy) };
+    const pill = { x: 0, text: phone ? hy + ' · живі: ' + cnt.yes : pillText };
+
+    // axis labels never overlap: year badge > count pill > «сьогодні» > decade ticks
+    const badgeW = phone ? this.est(rb.t, 7.4) + 14 : this.est(rb.t, 7.2) + 10;
+    const boxes = [[rb.x - badgeW / 2, rb.x + badgeW / 2]];
+    if (!phone) {
+      const pillW = this.est(pill.text, 6.8) + 16, right = rb.x + badgeW / 2 + 6, left = rb.x - badgeW / 2 - 6 - pillW;
+      pill.x = Math.round(right + pillW <= mainW - 8 ? right : left >= 8 ? left : (mainW - 8 - right > left ? right : 8));
+      boxes.push([pill.x, pill.x + pillW]);
+    }
+    const hits = (a, z) => boxes.some((bx) => a < bx[1] + 4 && z > bx[0] - 4);
+    const todayX = Math.round(X(2026)), todayW = this.est('сьогодні', 6.4);
+    const showTodayLab = !phone && showToday && !hits(todayX - todayW / 2, todayX + todayW / 2);
+    if (showTodayLab) boxes.push([todayX - todayW / 2, todayX + todayW / 2]);
+    const tickHalf = this.est('2000', 6.2) / 2;
+    const shownTicks = ticks.filter((t) => !hits(t.x - tickHalf, t.x + tickHalf));
+
+    // ages along the rule (V3, V5)
+    const ages = [];
+    if (!phone && (v === 3 || v === 5)) {
+      rows.forEach((r) => {
+        if (!r.pid) return;
+        const q = P[r.pid]; if (q.undated) return;
+        const a = this.alive(q, hy);
+        if (a === 'no') return;
+        ages.push({ x: Math.round(X(hy + 1) + 4), y: r.top + r.cy, t: (a === 'maybe' ? '~' : (q.bq ? '~' : '')) + (hy - q.b) + (a === 'maybe' ? '?' : ''), cls: (a === 'maybe' ? 'is-maybe' : '') + (r.pid === sel ? ' is-sel' : '') });
+      });
+    }
+
+    // tooltip
+    let tip = { show: false, av: {}, evs: [] };
+    const tipRow = tipPid ? rows.find((r) => r.pid === tipPid) : null;
+    if (tipRow && !phone) tip = this.tipVals(tipPid, ctx, X(hy), tipRow.top + tipRow.cy, viewH + 0, (v === 3 || v === 5 || X(hy) + 300 > R) ? 'left' : 'right');
+
+    // events (V3)
+    const evCols = [], evLabels = [];
+    if (v === 3 && !phone) {
+      const ends = [-1e9, -1e9];
+      this.hist().forEach((e) => {
+        const x0 = X(e.b), w = Math.max(3, X(Math.min(e.e, 2026) + 1) - x0);
+        evCols.push({ x: Math.round(x0), w: Math.round(w), cls: '' });
+        const lw = this.est(e.s, 6.6) + this.est(e.y, 6) + 6;
+        let x = Math.round(x0 + 2);
+        if (x + lw > mainW - 8) x = mainW - 8 - lw;
+        let tier = x >= ends[0] + 10 ? 0 : (x >= ends[1] + 10 ? 1 : (ends[0] <= ends[1] ? 0 : 1));
+        x = Math.max(x, ends[tier] + 10);
+        ends[tier] = x + lw;
+        evLabels.push({ x: x, top: tier ? 23 : 5, text: e.s, years: e.y, aria: e.t + ', ' + e.y, cls: hy >= e.b && hy <= e.e ? 'is-active' : '' });
+      });
+    }
+
+    // overview (V4)
+    let ov = { bars: [], ticks: [], l: { x: 0, w: 0 }, r: { x: 0, w: 0 }, bx: 0, bw: 0, peak: '', range: '', aria: '' };
+    if (v === 4 && !phone) {
+      const oL = 24, oR = mainW - 24, ok = (oR - oL) / (2030 - 1865), OX = (y) => oL + (y - 1865) * ok;
+      this._ovGeo = { L: oL, k: ok, y0: 1865 };
+      let max = 0, peakY = 0; const counts = [];
+      for (let y = 1865; y <= 2026; y++) { const c = this.count(y).yes; counts.push([y, c]); if (c > max) { max = c; peakY = y; } }
+      ov.bars = counts.map((yc) => ({ x: Math.round(OX(yc[0]) * 10) / 10, w: Math.max(1, Math.round((ok - 1) * 10) / 10), h: Math.max(1, Math.round(yc[1] / max * 84)), cls: yc[0] === hy ? 'is-hov' : (yc[0] >= s.brush[0] && yc[0] <= s.brush[1] ? 'is-in' : '') }));
+      for (let y = 1880; y <= 2000; y += 20) ov.ticks.push({ x: Math.round(OX(y)), t: String(y), cls: '' });
+      ov.bx = Math.round(OX(s.brush[0])); ov.bw = Math.round(OX(s.brush[1] + 1) - OX(s.brush[0]));
+      ov.l = { x: oL, w: Math.max(0, ov.bx - oL) }; ov.r = { x: ov.bx + ov.bw, w: Math.max(0, oR - ov.bx - ov.bw) };
+      ov.peak = 'найбільше — ' + max + ' у ' + peakY + ' р. · клацніть, щоб перемістити вікно';
+      ov.range = 'Обрано ' + s.brush[0] + '–' + s.brush[1] + ' · ' + built.n + ' ' + this.plural(built.n, 'людина', 'людини', 'людей');
+      ov.aria = 'Гістограма кількості живих людей за роками, пік ' + max + ' у ' + peakY;
+    }
+
+    // controls + subtitle
+    const groupOpts = [['branch', 'Гілки'], ['gen', 'Покоління']].map((o) => ({ label: o[1], sel: grp === o[0], pick: this.groupPick(o[0]) }));
+    let ctrls = [], sub = '';
+    const nDated = M.dated.length, nUnd = M.undated.length;
+    const onScale = nDated + ' ' + this.plural(nDated, 'людина', 'людини', 'людей') + ' на шкалі';
+    if (tabbed) { sub = onScale + ' · ' + nUnd + ' без дат — ' + (useGen ? 'у кінці списку' : 'у своїх гілках'); ctrls = [{ isSeg: true, label: 'Групувати', opts: groupOpts }]; }
+    if (v === 3) { sub = nDated + ' людини · ' + this.hist().length + ' історичних подій · ' + nUnd + ' без дат — унизу'; ctrls = [{ isCheck: true, label: 'Історичні події', on: true }, { isCheck: true, label: 'Вік на лінії року', on: true }, { isZoom: true, label: '1 рік = 6 px' }]; }
+    if (v === 4) { sub = 'Огляд 1865–2026 · деталі за вибраний проміжок'; ctrls = [{ isBtn: true, label: 'Увесь час', cls: '' }, { isBtn: true, label: 'Вікно: 40 років', cls: 'ft-btn--ghost' }]; }
+    if (v === 5) { sub = 'Життя однієї людини серед родини та подій'; ctrls = [{ isBtn: true, label: '← Уся родина', cls: 'ft-btn--ghost' }, { isBtn: true, label: this.fullName(P[sel]) + '  ▾', cls: '' }]; }
+
+    // undated dock
+    const undAll = M.undated.map((id) => ({ name: this.fullName(P[id]), rel: P[id].rel, initials: this.initials(P[id]), select: () => this.select(id) }));
+    let room = mainW - 48 - this.est('Без відомих дат · ' + undAll.length, 6.6) - 12 - 78, und = [];
+    for (const u of undAll) { const w = this.est(u.name, 7.6) + this.est(u.rel, 6.6) + 48; if (w > room) break; und.push(u); room -= w + 8; }
+    const rest = undAll.slice(und.length);
+    const undMore = { show: rest.length > 0, text: 'ще ' + rest.length, title: rest.map((u) => u.name + ' — ' + u.rel).join('; ') };
+
+    // story (V5)
+    let story = { name: '', count: '', items: [], und: [] };
+    if (v === 5 && !phone) {
+      const items = this.story(ctx);
+      const und5 = M.undated.filter((id) => this.relation(id, sel)).map((id) => ({ name: this.fullName(P[id]), rel: P[id].rel, initials: this.initials(P[id]) }));
+      const half = Math.ceil(items.length / 2);
+      const ordered = []; for (let i = 0; i < half; i++) { ordered.push(items[i]); if (items[i + half]) ordered.push(items[i + half]); }
+      story = { name: this.fullName(P[sel]), count: items.length + ' ' + this.plural(items.length, 'подія', 'події', 'подій'), items: ordered, und: und5 };
+    }
+
+    // close-up crop + callouts
+    const closeup = props.closeup === 'true' || props.closeup === true;
+    const sc = closeup ? (Number(props.closeScale) || 1.45) : 1;
+    const rootW = closeup ? (Number(props.closeW) || 760) : frameW, rootH = closeup ? (Number(props.closeH) || 600) : frameH;
+    const focusRow = tipRow || rows.find((r) => r.pid === sel) || rows[0];
+    const fx = X(hy) + (tip.show ? (tip.x > X(hy) ? 120 : -120) : 0);
+    const rowF = 56 + scrollTop + (focusRow ? focusRow.top + focusRow.cy : 200);
+    const topF = 56 + axisTop - 14, cropH = rootH / sc, cropW = rootW / sc;
+    const tx = closeup ? Math.round(Math.max(rootW - frameW * sc, Math.min(0, rootW / 2 - fx * sc))) : 0;
+    const tyRaw = rowF + 40 <= topF + cropH ? -topF * sc : rootH / 2 - (rowF + 30) * sc;
+    let ty = closeup ? Math.round(Math.max(rootH - frameH * sc, Math.min(0, tyRaw))) : 0;
+    let txx = tx;
+    if (closeup && props.closeX != null && props.closeX !== '') txx = Math.round(-Number(props.closeX) * sc);
+    if (closeup && props.closeY != null && props.closeY !== '') ty = Math.round(-Number(props.closeY) * sc);
+    const callouts = [];
+    if (props.callouts === 'true' || props.callouts === true) {
+      const cl = -txx / sc + 18, cr = -txx / sc + cropW - 18, ct = -ty / sc - 56 + 18, cb = -ty / sc - 56 + cropH - 18;
+      const cx = (x) => Math.round(Math.max(cl, Math.min(cr, x)));
+      const selRow = rows.find((r) => r.pid === sel);
+      const spot = (r) => { const sg = r.segs, a = sg[0].x, z = sg[sg.length - 1].x + sg[sg.length - 1].w; if (z < cl + 24 || a > cr - 24) return null; return Math.round(Math.min(z - 12, Math.max(a + 12, cl + 8))); };
+      const inTip = (x, y) => tip.show && x > tip.x - 16 && x < tip.x + 284 && y > scrollTop + tip.y - 16 && y < scrollTop + tip.y + 196;
+      const dimRow = rows.find((r) => {
+        if (!r.pid || r.cls.indexOf('is-dim') < 0 || r.pid === sel || !r.segs.length) return false;
+        const y = scrollTop + r.top + r.cy, x = spot(r);
+        return x != null && y > ct + 20 && y < cb - 10 && !inTip(x, y);
+      });
+      callouts.push({ n: 1, x: pill.x - 4, y: axisTop + 2 });
+      if (tip.show) callouts.push({ n: 2, x: tip.x + 268, y: scrollTop + tip.y });
+      if (selRow) callouts.push({ n: 3, x: cx(X(P[sel].b) - 12), y: scrollTop + selRow.top + selRow.cy });
+      if (dimRow) callouts.push({ n: 4, x: spot(dimRow), y: scrollTop + dimRow.top + dimRow.cy - 12 });
+    }
+
+    const pn = this.panelVals(ctx);
+    const lgOpen = this.legendOpen();
+    const lg = {
+      open: lgOpen, phone: phone, cls: phone ? 'is-phone' : 'is-desk', right: (panel ? 400 : 0) + 24,
+      branch: (phone || tabbed) && !useGen, lines: tabbed && !useGen && !phone, event: v === 3 && !phone,
+      undText: v === 3 && !phone ? 'Дати невідомі — внизу, у «Без відомих дат»' : useGen ? 'Дати невідомі — рядок без смуги, у кінці списку' : 'Дати невідомі — рядок без смуги поруч із родичами',
+      selText: phone ? 'Обрана людина — деталі в картці внизу' : 'Обрана людина — деталі в панелі праворуч'
+    };
+
+    return {
+      theme: theme, rootW: rootW, rootH: rootH, frameW: frameW, frameH: frameH, tx: txx, ty: ty, sc: sc,
+      isDesk: !phone, isPhone: phone, panelOpen: panel, onKey: this.h('onKey'),
+      sub: sub, ctrls: ctrls, groupOpts: groupOpts, lg: lg, toggleLegend: this.h('toggleLegend'), closeLegend: this.h('closeLegend'),
+      isV3: v === 3 && !phone, isV4: v === 4 && !phone, isV5: v === 5 && !phone,
+      laneTop: laneTop, evLabels: evLabels, evCols: evCols,
+      ovTop: ovTop, ov: ov, histClick: this.h('histClick'), histRef: this.histRef(),
+      axisTop: axisTop, ticks: shownTicks, grids: grids, showToday: showToday, showTodayLab: showTodayLab, todayX: todayX, rb: rb, pill: pill,
+      scrollTop: scrollTop, scrollBottom: scrollBottom, scrollRef: this.scrollRef(), onMove: this.h('onMove'), onLeave: this.h('onLeave'), onPlotClick: this.h('onPlotClick'),
+      plotH: Math.max(built.height + (phone ? 96 : 0), viewH), bgs: ctx.bgs, hb: hb, conns: ctx.conns, rows: rows, ages: ages, tip: tip,
+      showDock: dockH > 0, undCount: M.undated.length, und: und, undMore: undMore,
+      storyH: storyH, story: story, callouts: callouts, pn: pn
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -14,9 +14,6 @@ html[data-theme="dark"], html[data-theme="dark"] body { background: #191714; }
 .ft-seg--full > button { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; padding: 0 8px; }
 .ft-brand__title { max-width: 280px; }
 
-/* familytree.css uses .ft-seg for both connector lines (§10) and segmented controls (§5);
-   the connector rule would make every segmented control absolute and unclickable. */
-.ft-seg[role="group"] { position: relative; pointer-events: auto; border: 0; }
 
 /* familytree.css caps menus at "100% - 64px" of their positioned parent, which is the 56px top bar
    (or the 48px drawer bar), so they collapsed to nothing. Cap them by the window instead. */
@@ -243,3 +240,25 @@ html[data-theme="dark"], html[data-theme="dark"] body { background: #191714; }
 .ft-changes__text { font-size: var(--fs-14); color: var(--ink-2); line-height: 1.5; margin: 0; }
 .ft-changes__ver { padding-top: 12px; margin: 0; }
 .is-phone .ft-changes__item { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+
+/* ---------- Хронологія (timeline.css draws the view; these fit it into the app) ---------- */
+.ft-main > .tl-main { position: absolute; inset: 0; }
+.tl-main .tl-head .tl-title, .tl-main .tl-ph-head .tl-title { color: var(--ink); }
+.tl-scroll:focus-visible, .tl-name:focus-visible, .tl-ph-name:focus-visible, .tl-lgbtn:focus-visible { outline: 2px solid var(--accent-line); outline-offset: -2px; }
+.tl-name:focus-visible, .tl-ph-name:focus-visible { outline-offset: 0; }
+.tl-note { position: absolute; left: 24px; right: 24px; margin: 8px 0 0; font-size: 13px; color: var(--ink-2); }
+.tl-empty { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 10px; padding: 24px; text-align: center; }
+.tl-empty__t { margin: 0; font-family: var(--font-serif); font-size: 22px; font-weight: 500; }
+.tl-empty__s { margin: 0 0 6px; font-size: 14px; color: var(--ink-2); max-width: 360px; }
+.tl-peek__at { display: block; font-size: 12px; font-weight: 650; color: var(--accent); font-variant-numeric: tabular-nums; }
+.tl-peek .tl-av--md { width: 40px; height: 48px; }
+.tl-lab.is-rel, .tl-ph-name { text-shadow: 0 0 2px var(--paper), 0 0 2px var(--paper), 0 0 3px var(--paper); }
+/* names in capitals (☰ → Вигляд → Імена) */
+.is-names-upper .tl-name__t, .is-names-upper .tl-tip__name { text-transform: uppercase; letter-spacing: .015em; }
+.is-names-upper .tl-name .tl-name__t { font-size: 12px; }
+/* the person panel on the timeline */
+.tl-totree { font-size: 13px; white-space: nowrap; }
+.tl-chron { display: grid; gap: 6px; font-size: 13px; line-height: 1.45; color: var(--ink); }
+.tl-chron div { display: grid; grid-template-columns: 16px minmax(0, 1fr); gap: 8px; }
+.tl-chron i { width: 8px; height: 8px; margin-top: 6px; border-radius: 50%; background: var(--accent); }
+.sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }

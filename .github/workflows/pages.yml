@@ -25,6 +25,7 @@ jobs:
         with:
           node-version: 20
       - run: node tests/tree-engine.test.js
+      - run: node tests/timeline-engine.test.js
 
   build:
     needs: test

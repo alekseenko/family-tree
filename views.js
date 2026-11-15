@@ -13,7 +13,7 @@
     if (s.screen === 'error') return errorCard(A);
     if (s.view === 'people') return people(A);
     if (s.view === 'desc') return descendants(A);
-    if (s.view === 'time') return timeline(A);
+    if (s.view === 'time') return FA.timelineView(A);
     return emptyTree(A);
   }
 
@@ -189,118 +189,7 @@
     return wrap;
   }
 
-  /* ---------------------------------------------------------------- Timeline */
-  // Years run down the page, one column per person, like a calendar's "find a time": a bar from birth
-  // to death (to today for the living). Hovering or tapping a year shows who was alive then.
-  function timeline(A) {
-    var s = A.s, d = s.data, now = new Date().getFullYear(), phone = A.isPhone();
-    var COL = phone ? 56 : 66, RULER = phone ? 46 : 60, YH = phone ? 10 : 12, HEAD = 78;
-    var wrap = el('div.ft-list.ft-timeline');
-    // a click shows the person's panel straight away (in the tree the first click only centres them)
-    var open = function (id) { A.focusPerson(id); A.set({ drawerOpen: true }); };
-    var span = function (v) { var r = FE.readDate(v); return r && r.y && !r.bad ? { y: r.y, rough: !!(r.approx || r.free) } : null; };
-    // who can be placed: a known birth year, or at least the year they died
-    var rows = [], undated = [];
-    Object.keys(d.people).forEach(function (id) {
-      var p = d.people[id], b = span(p.birth.date), dd = p.deceased ? span(p.death.date) : null;
-      if (!b && !dd) { undated.push(p); return; }
-      var from = b ? b.y : dd.y - 60, to = dd ? dd.y : p.deceased ? Math.min(now, from + 75) : now;
-      if (to < from) to = from;
-      rows.push({ p: p, from: from, to: to,
-        // an end or a start that isn't known exactly fades out instead of stopping sharply
-        fadeTop: !b || b.rough, fadeEnd: p.deceased && (!dd || dd.rough), living: !p.deceased });
-    });
-    rows.sort(function (x, y) { return x.from - y.from || FE.byName(x.p, y.p); });
-    wrap.appendChild(el('div.ft-list__bar', null,
-      el('h2.ft-list__title', null, 'Хронологія'),
-      el('span.ft-list__count', null, rows.length ? count(rows.length, 'людина', 'людини', 'людей') + ' · ' + rows[0].from + '–' + now : 'Ще нікого з відомими роками'),
-      el('span.ft-hint', null, 'Наведіть на рік, щоб побачити, хто тоді жив; натисніть на людину, щоб відкрити її фото й нотатки.')));
-    if (!rows.length) { wrap.appendChild(el('p.ft-list__empty', null, 'Додайте рік народження чи смерті хоча б одній людині — і її життя з’явиться тут.')); return wrap; }
-
-    var first = Math.floor(rows[0].from / 10) * 10, last = now + 3;
-    var yearY = function (y) { return (y - first) * YH; };
-    var W = rows.length * COL, H = (last - first + 1) * YH;
-    var grid = el('div.ft-tl', { style: 'grid-template-columns:' + RULER + 'px ' + W + 'px;grid-template-rows:' + HEAD + 'px ' + H + 'px;--yh:' + YH + 'px;--col:' + COL + 'px;--ruler:' + RULER + 'px' });
-    grid.appendChild(el('div.ft-tl__corner'));
-    // names along the top, pinned while the years scroll under them
-    grid.appendChild(el('div.ft-tl__head', null, rows.map(function (r) {
-      var p = r.p;
-      // the bar below is the keyboard stop for each person; the name is for the mouse
-      return el('button.ft-tl__who' + (p.id === s.focusId ? '.is-focus' : ''), { type: 'button', tabindex: '-1', title: FE.nameOf(p) + ', ' + FE.yearsOf(p), 'data-k': 'tl-who:' + p.id,
-        on: { click: function () { open(p.id); } } }, A.avatar(p), el('span.ft-tl__name', null, FE.givenOf(p)));
-    })));
-    // the year ruler down the left, pinned while scrolling sideways
-    var ruler = el('div.ft-tl__ruler', { 'aria-hidden': 'true' });
-    for (var y = first; y <= last; y += 10) ruler.appendChild(el('span.ft-tl__decade', { style: 'top:' + yearY(y) + 'px' }, String(y)));
-    var hoverLabel = el('span.ft-tl__yearlabel');
-    ruler.appendChild(hoverLabel);
-    grid.appendChild(ruler);
-
-    var body = el('div.ft-tl__body', { style: 'background-position: 0 ' + (-yearY(first)) + 'px' });
-    body.appendChild(el('div.ft-tl__today', { style: 'top:' + yearY(now) + 'px' }, el('span', null, 'сьогодні')));
-    var bandCount = el('span.ft-tl__count');
-    var band = el('div.ft-tl__band', null, bandCount);
-    body.appendChild(band);
-    var bars = rows.map(function (r, i) {
-      var p = r.p, top = yearY(r.from), h = Math.max(YH, yearY(r.to + 1) - top);
-      var marks = [];
-      // marriages and partnerships as dots, children's births as ticks
-      FE.famsOf(d, p.id).forEach(function (f) {
-        var o = FE.other(f, p.id), sy = span(f.start);
-        if (sy && f.b) marks.push(el('span.ft-tl__mark.is-union', { style: 'top:' + (yearY(sy.y) - top) + 'px', title: FE.unionLong(f) + (o && d.people[o] ? ' · ' + FE.nameOf(d.people[o]) : '') }));
-        f.kids.forEach(function (k) {
-          var c = d.people[k.id], cy = c && span(c.birth.date);
-          if (cy) marks.push(el('span.ft-tl__mark.is-kid', { style: 'top:' + (yearY(cy.y) - top) + 'px', title: 'Народження: ' + FE.nameOf(c) + ', ' + cy.y }));
-        });
-      });
-      var bar = el('button.ft-tl__bar' + (r.living ? '.is-living' : '.is-deceased') + (r.fadeTop ? '.is-fadetop' : '') + (r.fadeEnd ? '.is-fadeend' : '') + (p.id === s.focusId ? '.is-focus' : ''),
-        { type: 'button', style: 'left:' + (i * COL + COL / 2 - 7) + 'px;top:' + top + 'px;height:' + h + 'px', 'data-k': 'tl:' + p.id,
-          'aria-label': FE.nameOf(p) + ', ' + FE.yearsOf(p), title: FE.nameOf(p) + ' · ' + FE.yearsOf(p),
-          on: { click: function () { open(p.id); } } }, marks);
-      bar._r = r;
-      body.appendChild(bar);
-      return bar;
-    });
-    // the year under the pointer: a band across, the year and how many were alive, the rest dimmed
-    var shown = null;
-    var showYear = function (yr) {
-      if (yr === shown) return;
-      shown = yr;
-      if (yr == null) { grid.classList.remove('is-year'); bars.forEach(function (b) { b.classList.remove('is-alive'); }); return; }
-      var alive = 0;
-      bars.forEach(function (b) { var on = yr >= b._r.from && yr <= b._r.to; b.classList.toggle('is-alive', on); if (on) alive++; });
-      grid.classList.add('is-year');
-      band.style.top = yearY(yr) + 'px';
-      hoverLabel.style.top = yearY(yr) + 'px';
-      hoverLabel.textContent = String(yr);
-      bandCount.textContent = alive ? 'живі: ' + alive : 'нікого';
-    };
-    var yearAt = function (e) { var r = body.getBoundingClientRect(); return Math.min(last, Math.max(first, first + Math.floor((e.clientY - r.top) / YH))); };
-    body.addEventListener('pointermove', function (e) { showYear(yearAt(e)); });
-    body.addEventListener('pointerdown', function (e) { if (e.pointerType !== 'mouse') showYear(yearAt(e)); });
-    body.addEventListener('pointerleave', function (e) { if (e.pointerType === 'mouse') showYear(null); });
-    grid.appendChild(body);
-    wrap.appendChild(grid);
-
-    if (undated.length) {
-      undated.sort(FE.byName);
-      wrap.appendChild(el('div.ft-tl__undated', null,
-        el('p.ft-hint', null, 'Без жодного відомого року, тож тут не показано (' + undated.length + '):'),
-        el('div.ft-tl__chips', null, undated.map(function (p) { return el('button.ft-chip', { type: 'button', on: { click: function () { open(p.id); } } }, FE.nameOf(p)); })),
-        el('button.ft-link', { type: 'button', on: { click: function () { A.set({ listFilter: 'missing' }); A.setView('people'); } } }, 'Відкрити «Бракує дат» у списку людей')));
-    }
-    // on arrival: the chosen person's column and birth in view
-    var fi = rows.findIndex(function (r) { return r.p.id === s.focusId; });
-    if (s.tlJump && fi >= 0) {
-      s.tlJump = false;
-      Promise.resolve().then(function () {
-        if (!wrap.isConnected) return;
-        wrap.scrollTop = Math.max(0, grid.offsetTop + HEAD + yearY(rows[fi].from) - wrap.clientHeight / 3);
-        wrap.scrollLeft = Math.max(0, RULER + fi * COL - wrap.clientWidth / 2);
-      });
-    }
-    return wrap;
-  }
+  // Хронологія lives in timeline-view.js.
 
   /* ================================================================ overlays */
   function renderOverlays(slot, A) {

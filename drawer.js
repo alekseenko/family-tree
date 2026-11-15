@@ -33,6 +33,14 @@
           el('button.ft-btn.ft-btn--sm.ft-btn--primary', { type: 'button', on: { click: A.startEdit } }, 'Додати ім’я'),
           el('button.ft-btn.ft-btn--sm', { type: 'button', on: { click: function () { A.openQa('partner', pid, 'link'); } } }, 'Пов’язати з наявною особою')) : null));
     }
+    // on the timeline: what this life looks like next to everyone else's
+    if (s.view === 'time' && !s.editMode && FA.tlFacts) {
+      var facts = FA.tlFacts(A, pid);
+      if (facts.length) scroll.appendChild(el('section.ft-section', { 'aria-label': 'У хронології' },
+        el('div.ft-section__head', null, el('h3.ft-section__title', null, 'У хронології'),
+          el('button.ft-link.tl-totree', { type: 'button', 'data-k': 'tl-totree', on: { click: function () { A.focusPerson(pid, { view: 'tree' }); } } }, 'Відкрити в дереві')),
+        el('div.tl-chron', null, facts.map(function (f) { return el('div', null, el('i', { 'aria-hidden': 'true' }), el('span', null, f)); }))));
+    }
     scroll.appendChild(family(A, p, ro));
     scroll.appendChild(notes(A, p, ro));
     scroll.appendChild(photos(A, p, ro));

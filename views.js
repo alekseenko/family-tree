@@ -117,7 +117,7 @@
       var td = function (text, muted, extra) { return el('div.ft-td' + (muted ? '.ft-td--muted' : '') + (extra || ''), { role: 'cell' }, text); };
       table.appendChild(el('div.ft-tr' + (p.id === s.focusId ? '.is-focus' : ''), { role: 'row' },
         el('div.ft-td', { role: 'cell' }, el('button.ft-rowbtn', { type: 'button', on: { click: function () { A.focusPerson(p.id, { noOpen: true, view: 'tree' }); A.s.centered = false; } } },
-          A.avatar(p), el('span', { style: 'min-width:0' }, el('span.ft-rowbtn__name', null, FE.nameOf(p)), p.birthName && p.birthName !== p.surname ? el('span.ft-rowbtn__aka', null, 'з дому ' + p.birthName) : null))),
+          A.avatar(p), el('span', { style: 'min-width:0' }, el('span.ft-rowbtn__name', null, FE.nameOf(p)), p.birthName && p.birthName !== p.surname ? el('span.ft-rowbtn__aka', null, 'з дому ' + FE.caseName(p.birthName)) : null))),
         td(born || 'Невідомо', !born), td(p.birth.place || '—', !p.birth.place), td(died, !(p.deceased && p.death.date)),
         td(pars.join(', ') || '—', !pars.length), td(String((p.photos || []).length || '—'), false, '.ft-td--num'),
         // the "Зауваження" filter lists each person's notes on a line of their own under the row
@@ -572,12 +572,12 @@
       if (p.photo) ph.appendChild(A.portrait(p)); else ph.textContent = FE.initials(p);
       world.appendChild(el('div.ft-pnode' + (p.deceased ? '.is-deceased' : '') + (id === pfocus ? '.is-focus' : '') + (!p.given && !p.surname ? '.is-unknown' : ''),
         { style: 'transform: translate(' + Math.round(n.x) + 'px, ' + Math.round(n.y) + 'px)' },
-        ph, el('span', { style: 'min-width:0' }, el('span.ft-pnode__name', null, p.given && p.surname ? [el('span', null, p.given.trim()), el('span', null, p.surname.trim())] : FE.nameOf(p)), el('span.ft-pnode__years', { style: 'display:block' }, FE.yearsOf(p) || ' '))));
+        ph, el('span', { style: 'min-width:0' }, el('span.ft-pnode__name', null, p.given && p.surname ? [el('span', null, FE.caseName(p.given.trim())), el('span', null, FE.caseName(p.surname.trim()))] : FE.nameOf(p)), el('span.ft-pnode__years', { style: 'display:block' }, FE.yearsOf(p) || ' '))));
     });
     var leg = function (style, text) { return el('span', null, el('i', { style: style }), text); };
     var sheet = el('div.ft-poster.ft-print-target' + (s.posterPhotos ? '' : '.no-photos'), { style: 'transform: translate(' + sx + 'px, ' + sy + 'px) scale(' + sk.toFixed(4) + ')' },
       el('header.ft-poster__head', null,
-        el('div', null, el('p.ft-poster__eyebrow', null, 'Родинний архів'), el('h1.ft-poster__title', null, fp.surname ? 'Рід: ' + fp.surname : 'Наша родина')),
+        el('div', null, el('p.ft-poster__eyebrow', null, 'Родинний архів'), el('h1.ft-poster__title', null, fp.surname ? 'Рід: ' + FE.caseName(fp.surname) : 'Наша родина')),
         el('p.ft-poster__sub', null, count(gens, 'покоління', 'покоління', 'поколінь') + ' · у центрі ' + FE.nameOf(fp), el('br'), 'Укладено ' + FE.fmtDate(FA.today()))),
       el('div.ft-poster__tree', null, world),
       el('footer.ft-poster__foot', null,

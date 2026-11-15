@@ -403,4 +403,16 @@ test('merge: matching people, filled-in fields, conflicts, photos and families',
   assert.deepStrictEqual(FM.suggest(ours, { people: { s: P('s', 'Тарас', 'Коваленко', 'm', '1950') }, families: [] }), []);
 });
 
+test('names shown as written, capitalised or in capitals; the data keeps them as typed', () => {
+  const q = { given: 'іван-петро', surname: 'КОВАЛЕНКО', birthName: '' };
+  FE.setNameCase('cap');
+  assert.strictEqual(FE.nameOf(q), 'Іван-Петро Коваленко');
+  assert.strictEqual(FE.caseName('мар’яна (ДІВОЧЕ ІВАНЕНКО)'), 'Мар’яна (Дівоче Іваненко)');
+  FE.setNameCase('upper');
+  assert.strictEqual(FE.givenOf(q), 'ІВАН-ПЕТРО');
+  FE.setNameCase('as');
+  assert.strictEqual(FE.nameOf(q), 'іван-петро КОВАЛЕНКО');
+  assert.strictEqual(q.given, 'іван-петро');
+});
+
 console.log(`\n${passed} tests passed`);

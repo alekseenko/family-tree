@@ -93,7 +93,7 @@
       el('h2.ft-dname' + (unknown ? '.is-unknown' : ''), null, FE.nameOf(p)),
       kin ? el('p.ft-dkin', { title: 'Відносно головної особи — ' + FE.nameOf(home) }, kin) : null,
       p.nick ? el('p.ft-daka', null, '«' + p.nick + '»') : null,
-      p.birthName && p.birthName !== p.surname ? el('p.ft-daka', null, 'з дому ' + p.birthName) : null);
+      p.birthName && p.birthName !== p.surname ? el('p.ft-daka', null, 'з дому ' + FE.caseName(p.birthName)) : null);
     var editing = s.editMode && !ro;
     if (!editing) {
       var fact = function (label, val, muted, place) {

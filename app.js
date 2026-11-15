@@ -12,7 +12,7 @@
   var s = {
     data: null, rev: 0, focusId: null, view: 'tree', dvRoot: null,
     zoom: 1, panX: 0, panY: 0, anim: false, lineFade: false, centered: false, dragging: false,
-    density: pref('density', 'compact'), theme: pref('theme', 'system'),
+    density: pref('density', 'compact'), theme: pref('theme', 'system'), nameCase: pref('nameCase', 'as'),
     present: location.hash === '#present' || pref('present', '0') === '1',
     drawerOpen: true, editMode: false, qa: null, menuOpen: false, statusOpen: false, explainerOpen: false, moreOpen: false,
     search: '', searchOpen: false, searchIdx: 0, phoneSearch: false,
@@ -49,6 +49,7 @@
   var P = function (id) { return s.data && s.data.people[id]; };
   // Data checks (FE.checkTree), worked out once per version of the data.
   var issuesFor = null, issuesVal = {};
+  FE.setNameCase(s.nameCase);
   var issues = function () { if (issuesFor !== s.data) { issuesFor = s.data; issuesVal = s.data ? FE.checkTree(s.data) : {}; } return issuesVal; };
   var given = function (id) { return FE.givenOf(P(id)); };
   var D = function () { return FE.DIMS[s.density]; };
@@ -640,7 +641,7 @@
     queued = false;
     if (!root) return;
     var keep = captureFocus();
-    root.className = ['ft-app ft-theme', 'is-' + s.density, isPhone() ? 'is-phone' : '', isTablet() ? 'is-tablet is-touch' : '', touchOnly ? 'is-touch' : '', s.dragging ? 'is-dragging' : '', s.present ? 'is-present' : '', 'is-view-' + s.view, s.drawerOpen && s.screen === 'app' && P(s.focusId) ? 'is-drawer' : ''].join(' ');
+    root.className = ['ft-app ft-theme', 'is-' + s.density, 'is-names-' + s.nameCase, isPhone() ? 'is-phone' : '', isTablet() ? 'is-tablet is-touch' : '', touchOnly ? 'is-touch' : '', s.dragging ? 'is-dragging' : '', s.present ? 'is-present' : '', 'is-view-' + s.view, s.drawerOpen && s.screen === 'app' && P(s.focusId) ? 'is-drawer' : ''].join(' ');
     root.setAttribute('data-theme', s.theme);
     document.documentElement.setAttribute('data-theme', s.theme);
     renderTopbar();
@@ -783,7 +784,7 @@
       var list = el('div.ft-results', { role: 'listbox', id: 'ft-results', 'aria-label': 'Знайдені люди' });
       res.forEach(function (p, i) {
         var nm = FE.nameOf(p), at = nm.toLowerCase().indexOf(q);
-        var why = at < 0 ? (p.nick && p.nick.toLowerCase().indexOf(q) >= 0 ? '«' + p.nick + '»' : p.birthName && p.birthName.toLowerCase().indexOf(q) >= 0 ? 'з дому ' + p.birthName : (p.birth.place || '')) : '';
+        var why = at < 0 ? (p.nick && p.nick.toLowerCase().indexOf(q) >= 0 ? '«' + p.nick + '»' : p.birthName && p.birthName.toLowerCase().indexOf(q) >= 0 ? 'з дому ' + FE.caseName(p.birthName) : (p.birth.place || '')) : '';
         list.appendChild(el('button.ft-result' + (i === s.searchIdx ? '.is-active' : ''), { type: 'button', role: 'option', id: 'ft-res-' + i, tabindex: '-1', 'aria-selected': String(i === s.searchIdx), on: { mousedown: function (e) { e.preventDefault(); pickResult(p.id); } } },
           avatar(p),
           el('span', null,
@@ -871,6 +872,10 @@
     m.appendChild(el('div.ft-menu__row', null, el('span', null, 'Картки'), seg([['compact', 'Компактні'], ['expanded', 'Детальні']].map(function (t) {
       return { label: t[1], sel: s.density === t[0], pick: function () { setDensity(t[0]); } };
     }), 'Вигляд карток')));
+    // names as typed, or tidied: «іван КОВАЛЕНКО» → Іван Коваленко / ІВАН КОВАЛЕНКО
+    m.appendChild(el('div.ft-menu__row', null, el('span', null, 'Імена'), seg([['as', 'Як записано'], ['cap', 'Іван'], ['upper', 'ІВАН']].map(function (t) {
+      return { label: t[1], sel: s.nameCase === t[0], pick: function () { setNameCase(t[0]); } };
+    }), 'Як показувати імена')));
     if (!viewOnlyScreen() && !s.otherTab) m.appendChild(item('eye', s.present ? 'Вийти з режиму перегляду' : 'Режим перегляду', function () { setPresent(!s.present); }));
     m.appendChild(item('keyboard', 'Гарячі клавіші', function () { set({ showKeys: true, menuOpen: false, focusReq: 'keys-close' }); }, el('kbd.ft-kbd', null, '?')));
     if (canEdit && !s.present) {
@@ -1013,16 +1018,16 @@
   // Split in two (measure, then change) so a whole tree of cards is measured in one layout pass.
   function nameOverflows(nameEl, p) {
     if (s.density !== 'compact' || !p.given || !p.surname) return false;
-    // a short name always fits one line; measuring every card is what's slow
-    if ((p.given + p.surname).length < 14) return false;
+    // a short name always fits one line (capitals are wider); measuring every card is what's slow
+    if ((p.given + p.surname).length < (s.nameCase === 'upper' ? 9 : 12)) return false;
     var row = nameEl.parentNode;
     return nameEl.scrollWidth > nameEl.clientWidth || row.scrollWidth > row.clientWidth;
   }
   function fitName(nameEl, p) {
     var row = nameEl.parentNode;
     nameEl.textContent = '';
-    nameEl.appendChild(el('span', null, p.given.trim()));
-    nameEl.appendChild(el('span', null, p.surname.trim()));
+    nameEl.appendChild(el('span', null, FE.caseName(p.given.trim())));
+    nameEl.appendChild(el('span', null, FE.caseName(p.surname.trim())));
     row.classList.add('is-2l');
   }
   function buildNode(id) {
@@ -1219,6 +1224,13 @@
     render();
     centerOn(s.focusId, true);
     fadeLines();
+  }
+  function setNameCase(v) {
+    if (v === s.nameCase) return;
+    setPref('nameCase', v);
+    FE.setNameCase(v);
+    issuesFor = null;   // the data checks quote names
+    set({ nameCase: v });
   }
   function setDensity(v) {
     if (v === s.density) return;

@@ -86,8 +86,18 @@
   function relTag(rel) { return REL_TAG[rel] || rel; }
 
   /* ------------------------------------------------------------ display helpers */
-  function nameOf(p) { if (!p) return ''; var n = [p.given, p.surname].filter(Boolean).join(' ').trim(); return n || 'Невідомо'; }
-  function givenOf(p) { if (!p) return ''; return (p.given || '').trim() || nameOf(p); }
+  // How names are shown (the data keeps them as typed): 'as' as written, 'cap' Іван-Петро Коваленко,
+  // 'upper' ІВАН КОВАЛЕНКО. A letter after an apostrophe stays small: Мар’яна.
+  var nameCase = 'as';
+  function setNameCase(v) { nameCase = v === 'cap' || v === 'upper' ? v : 'as'; }
+  function caseName(t) {
+    t = String(t == null ? '' : t);
+    if (nameCase === 'upper') return t.toLocaleUpperCase('uk');
+    if (nameCase === 'cap') return t.toLocaleLowerCase('uk').replace(/(^|[\s\-‐–—(«"„.]+)(\S)/g, function (m, a, c) { return a + c.toLocaleUpperCase('uk'); });
+    return t;
+  }
+  function nameOf(p) { if (!p) return ''; var n = [p.given, p.surname].filter(Boolean).join(' ').trim(); return n ? caseName(n) : 'Невідомо'; }
+  function givenOf(p) { if (!p) return ''; var g = (p.given || '').trim(); return g ? caseName(g) : nameOf(p); }
   function initials(p) { if (!p) return '?'; var a = (p.given || '').trim(), b = (p.surname || '').trim(); return ((a ? a[0] : '') + (b ? b[0] : '')).toUpperCase() || '?'; }
   // "1931–2014", "1933–?", "нар. 1979" or "Дати невідомі"
   function yearsOf(p) {
@@ -1010,7 +1020,7 @@
     DIMS: DIMS,
     famsOf: famsOf, parentFams: parentFams, primaryParentFam: primaryParentFam, other: other, yearOf: yearOf, sortFams: sortFams,
     kidRel: kidRel, relatedIds: relatedIds, lineOf: lineOf, vf: vf, hasLoop: hasLoop, unionStyle: unionStyle, relStyle: relStyle, unionShort: unionShort, unionLong: unionLong, unionNumbered: unionNumbered, relTag: relTag,
-    nameOf: nameOf, givenOf: givenOf, initials: initials, yearsOf: yearsOf, fmtDate: fmtDate, parseDate: parseDate, readDate: readDate, normDate: normDate, dateProblem: dateProblem, ageBetween: ageBetween, searchText: searchText, matches: matches, fold: fold, byName: byName,
+    nameOf: nameOf, givenOf: givenOf, caseName: caseName, setNameCase: setNameCase, initials: initials, yearsOf: yearsOf, fmtDate: fmtDate, parseDate: parseDate, readDate: readDate, normDate: normDate, dateProblem: dateProblem, ageBetween: ageBetween, searchText: searchText, matches: matches, fold: fold, byName: byName,
     siblingsOf: siblingsOf, alreadyLinked: alreadyLinked,
     newId: newId, insertKid: insertKid, splitName: splitName, removePerson: removePerson, detachPartner: detachPartner, detachParentLink: detachParentLink, tidyFamilies: tidyFamilies,
     parseMd: parseMd, mdSpans: mdSpans,

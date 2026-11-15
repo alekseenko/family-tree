@@ -39,6 +39,7 @@ Firefox, Safari й телефони не вміють записувати в п
 - ☰ → **Перевірка даних** показує дати, що не сходяться (смерть раніше за народження, дитина, народжена раніше за батьків чи після смерті матері), малоймовірний вік, можливі дублікати й людей без зв’язку з деревом.
 - **Хронологія** (або **4**) — роки життя всіх, у кого відомий хоч один рік, одне під одним: наведіть на рік, щоб побачити, хто тоді жив; натисніть на людину, щоб відкрити її фото й нотатки.
 - Кнопка з календарем угорі — **найближчі події**: дні народження, річниці шлюбу й пам’ятні дати на 30 днів (або рік) уперед. Крапка на кнопці — щось буде цього тижня, число — сьогодні. «Додати в календар» завантажує файл .ics, щоб нагадував ваш календар (Google, Apple, Outlook). Враховуються лише дати, відомі до дня й місяця.
+- ☰ → **Що нового** — що змінилося в застосунку. Поки ви цього не прочитали, на кнопці меню світиться крапка.
 - **Кадрувати** під портретом у панелі вибирає, яку частину головного фото видно на картках (можна й наблизити).
 - **⌘Z / Ctrl+Z** скасовує будь-яку зміну, **?** показує всі клавіші.
 - ☰ → **Завантажити family.js** — один файл з усім деревом і всіма фото, щоб надіслати родичам чи зберегти копію. Відкрити його: ☰ → **Імпорт** (фото опиняться в `photos/`; ті, що там уже є, не перезаписуються й не дублюються).
@@ -73,12 +74,14 @@ node scripts/build-site.js _site dev
 - `scripts/build-site.js` builds what GitHub Pages serves: the app and the sample (`family.js`, `photos/`), never `data/`. It stamps `version.js` and `version.json` with the commit, adds `?v=<commit>` to scripts and styles, and adds a Content Security Policy that allows only the site's own files.
 - `.github/workflows/pages.yml` runs the tests on every push and pull request and publishes `main`. In the repository settings, set **Pages → Source** to **GitHub Actions** once.
 - The app checks `version.json` at start, every 15 minutes and when the tab is shown again, and offers a reload when a newer build is live.
+- `changelog.js` is what ☰ → **Що нового** shows. Add an entry for every release people will notice (newest first, `id` = release date, tag `new`/`better`/`fix`); the menu shows a dot until the newest entry has been read.
 - `.claude/launch.json` serves the folder for the Claude Code preview pane only.
 
 ```
 index.html, boot.js, version.js     page, error capture, build version
 app.js, drawer.js, views.js         interface
 tree-engine.js                      layout and data rules (tested)
+changelog.js                        what's new, shown under ☰ → Що нового
 storage.js                          folder (File System Access), browser copy, GEDCOM
 ui.js, familytree.css, app.css      helpers, design system, additions
 family.js, photos/                  the sample family

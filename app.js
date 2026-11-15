@@ -12,7 +12,7 @@
   var s = {
     data: null, rev: 0, focusId: null, view: 'tree', dvRoot: null,
     zoom: 1, panX: 0, panY: 0, anim: false, lineFade: false, centered: false, dragging: false,
-    density: pref('density', 'compact'), theme: pref('theme', 'system'), nameCase: pref('nameCase', 'as'), evOpen: false, evYear: false, evMemorial: pref('evMemorial', '1') === '1',
+    density: pref('density', 'compact'), theme: pref('theme', 'system'), nameCase: pref('nameCase', 'as'), showChanges: false, evOpen: false, evYear: false, evMemorial: pref('evMemorial', '1') === '1',
     present: location.hash === '#present' || pref('present', '0') === '1',
     drawerOpen: true, editMode: false, qa: null, menuOpen: false, statusOpen: false, explainerOpen: false, moreOpen: false,
     search: '', searchOpen: false, searchIdx: 0, phoneSearch: false,
@@ -749,9 +749,9 @@
       }
     }
     // on a phone the events live in the menu, and the menu button carries their dot
-    var phoneDot = phone && s.screen === 'app' && soon.week;
-    bar.appendChild(el('button.ft-icon-btn' + (phoneDot ? '.ft-evbtn.is-soon' : ''), { type: 'button', 'aria-label': 'Меню' + (phoneDot ? ' (є найближчі події)' : ''), 'aria-expanded': String(s.menuOpen), 'data-k': 'menu', on: { click: function () { set({ menuOpen: !s.menuOpen, evOpen: false, statusOpen: false, explainerOpen: false }); } } },
-      icon('menu', 'ft-ico--lg'), phoneDot ? el('span.ft-evbtn__dot', { 'aria-hidden': 'true' }) : null));
+    var phoneDot = phone && s.screen === 'app' && soon.week, news = s.screen === 'app' && unseenChanges() > 0;
+    bar.appendChild(el('button.ft-icon-btn' + (phoneDot || news ? '.ft-evbtn' : '') + (phoneDot ? '.is-soon' : ''), { type: 'button', 'aria-label': 'Меню' + (phoneDot ? ' (є найближчі події)' : '') + (news ? ' (є щось нове)' : ''), 'aria-expanded': String(s.menuOpen), 'data-k': 'menu', on: { click: function () { set({ menuOpen: !s.menuOpen, evOpen: false, statusOpen: false, explainerOpen: false }); } } },
+      icon('menu', 'ft-ico--lg'), phoneDot || news ? el('span.ft-evbtn__dot', { 'aria-hidden': 'true' }) : null));
     if (s.menuOpen) bar.appendChild(renderMenu());
     if (phone && s.evOpen) bar.appendChild(renderEvents());
   }
@@ -846,6 +846,20 @@
     return el('button.ft-icon-btn.ft-icon-btn--sm', { type: 'button', 'aria-label': label || 'Закрити', 'data-k': k || null, on: { click: fn } }, icon('close'));
   }
   A.closeBtn = closeBtn;
+
+  /* ---------------------------------------------------------------- what's new */
+  // Releases not read yet (☰ → Що нового). Someone who has never opened it sees the last three weeks as new.
+  var CHANGES = window.FA_CHANGES || [];
+  function unseenChanges() {
+    var seen = pref('seenChanges', '');
+    if (!seen) { var t = new Date(Date.now() - 21 * 864e5); seen = t.getFullYear() + '-' + ('0' + (t.getMonth() + 1)).slice(-2) + '-' + ('0' + t.getDate()).slice(-2); }
+    return CHANGES.filter(function (c) { return c.id > seen; }).length;
+  }
+  function openChanges() {
+    if (CHANGES.length) setPref('seenChanges', CHANGES[0].id);
+    set({ showChanges: true, menuOpen: false, evOpen: false, focusReq: 'changes-close' });
+  }
+  A.unseenChanges = unseenChanges;
 
   /* ---------------------------------------------------------------- upcoming events */
   // Birthdays, anniversaries and memorial dates, worked out once a day per version of the data.
@@ -1016,6 +1030,7 @@
     }), 'Як показувати імена')));
     if (!viewOnlyScreen() && !s.otherTab) m.appendChild(item('eye', s.present ? 'Вийти з режиму перегляду' : 'Режим перегляду', function () { setPresent(!s.present); }));
     m.appendChild(item('keyboard', 'Гарячі клавіші', function () { set({ showKeys: true, menuOpen: false, focusReq: 'keys-close' }); }, el('kbd.ft-kbd', null, '?')));
+    if (CHANGES.length) m.appendChild(item('sparkle', 'Що нового', openChanges, unseenChanges() ? el('span.ft-chip.ft-chip--accent', null, 'нове') : null));
     if (canEdit && !s.present) {
       m.appendChild(el('div.ft-menu__sep', { role: 'separator' }));
       m.appendChild(item('trash', 'Почати порожнє дерево…', function () { set({ menuOpen: false, confirm: { kind: 'empty' } }); }, null, 'ft-menu__item--danger'));
@@ -1590,6 +1605,7 @@
     if (s.lightbox) { set({ lightbox: null, focusReq: 'card:' + s.focusId }); return true; }
     if (s.confirm) { set({ confirm: null, focusReq: 'card:' + s.focusId }); return true; }
     if (s.showKeys) { set({ showKeys: false, focusReq: 'card:' + s.focusId }); return true; }
+    if (s.showChanges) { set({ showChanges: false, focusReq: 'menu' }); return true; }
     if (s.qa) { set({ qa: null, focusReq: 'card:' + s.focusId }); return true; }
     if (s.menuOpen || s.evOpen || s.statusOpen || s.explainerOpen || s.moreOpen || s.depthOpen || s.showLegend) {
       // focus goes back to the button that opened it

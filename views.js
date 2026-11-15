@@ -309,6 +309,7 @@
     if (s.screen === 'welcome' && s.data) slot.appendChild(welcome(A));
     if (s.confirm) { var c = confirmDialog(A); if (c) slot.appendChild(c); }
     if (s.showKeys) slot.appendChild(keySheet(A));
+    if (s.showChanges) slot.appendChild(changesSheet(A));
     if (s.lightbox) slot.appendChild(lightbox(A));
     if (s.posterOpen && s.screen === 'app' && s.data) slot.appendChild(poster(A));
     if (s.merge && s.screen === 'app' && s.data) slot.appendChild(mergeScreen(A));
@@ -526,6 +527,27 @@
           el('span.ft-keys__h', null, 'Інше'),
           row('Скасувати · повернути', MAC ? ['⌘Z', '⇧⌘Z'] : ['Ctrl+Z', 'Ctrl+Y']), row('Ця довідка', ['?']), row('Закрити, скасувати, крок назад', ['Esc']), row('Детальні картки · пояснення ліній', ['D', 'L']), row('Видалити вибрану особу', ['Del']),
           el('p.ft-hint', { style: 'grid-column: 1 / -1; padding-top: 8px' }, 'Літерні клавіші працюють і з українською розкладкою.'))));
+  }
+
+  // ☰ → Що нового: the releases from changelog.js, newest first.
+  var CHANGE_TAG = { new: 'Нове', better: 'Покращено', fix: 'Виправлено' };
+  function changesSheet(A) {
+    var close = function () { A.set({ showChanges: false, focusReq: 'menu' }); };
+    var v = window.APP_VERSION && window.APP_VERSION !== 'dev' ? window.APP_VERSION : '';
+    return el('div.ft-scrim', { on: { click: function (e) { if (e.target === e.currentTarget) close(); } } },
+      el('div.ft-dialog.ft-dialog--wide.ft-changes', { role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'ft-changes-title' },
+        el('div.ft-pop__head', null, el('h2.ft-dialog__title', { id: 'ft-changes-title' }, 'Що нового'), A.closeBtn(close, null, 'changes-close')),
+        el('div.ft-changes__list', null, (window.FA_CHANGES || []).map(function (c) {
+          var p = c.id.split('-');
+          return el('section.ft-changes__rel', null,
+            el('h3.ft-changes__date', null, FE.fmtDate(p[2] + '.' + p[1] + '.' + p[0])),
+            el('ul.ft-changes__items', null, c.items.map(function (it) {
+              return el('li.ft-changes__item', null,
+                el('span.ft-chip' + (it.tag === 'new' ? '.ft-chip--accent' : it.tag === 'fix' ? '.ft-chip--sepia' : ''), null, CHANGE_TAG[it.tag] || it.tag),
+                el('div', null, el('p.ft-changes__title', null, it.title), el('p.ft-changes__text', null, it.text)));
+            })));
+        })),
+        v ? el('p.ft-hint.ft-changes__ver', null, 'Версія ' + v) : null));
   }
 
   // Full-size photo. ← → step through the person's photos, Esc or a click closes.

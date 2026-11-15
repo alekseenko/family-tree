@@ -447,4 +447,23 @@ test('upcoming events: birthdays, anniversaries, memorial dates; 29 February; on
   assert.ok(!FE.upcomingEvents(d, new Date(2026, 10, 15), 30).list.some((e) => e.kind === 'union'));
 });
 
+test('changelog: newest first, one entry per date, known tags, every item has a title and text', () => {
+  const box = { window: {} };
+  vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../changelog.js'), 'utf8'), box);
+  const list = box.window.FA_CHANGES;
+  assert.ok(Array.isArray(list) && list.length);
+  list.forEach((c, i) => {
+    assert.match(c.id, /^\d{4}-\d{2}-\d{2}$/, c.id);
+    if (i) assert.ok(c.id < list[i - 1].id, 'newest first: ' + c.id);
+    assert.ok(c.items.length, c.id);
+    c.items.forEach((it) => {
+      assert.ok(['new', 'better', 'fix'].includes(it.tag), c.id + ' ' + it.tag);
+      assert.ok(it.title && it.text, c.id + ' ' + it.title);
+    });
+  });
+  // the published site and the page itself both load it
+  assert.ok(/'changelog\.js'/.test(fs.readFileSync(path.join(__dirname, '../scripts/build-site.js'), 'utf8')));
+  assert.ok(/src="changelog\.js"/.test(fs.readFileSync(path.join(__dirname, '../index.html'), 'utf8')));
+});
+
 console.log(`\n${passed} tests passed`);

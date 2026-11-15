@@ -230,3 +230,16 @@ html[data-theme="dark"], html[data-theme="dark"] body { background: #191714; }
 .ft-events__foot .ft-check { font-size: var(--fs-13); align-items: center; }
 /* on a phone: a sheet under the top bar, the width of the screen */
 .is-phone .ft-events { position: fixed; left: 8px; right: 8px; top: 56px; width: auto; max-height: calc(100vh - 72px); }
+
+/* ☰ → Що нового */
+.ft-changes { max-height: min(720px, calc(100vh - 48px)); display: grid; grid-template-rows: auto minmax(0, 1fr) auto; }
+.ft-changes__list { overflow: auto; margin: 4px -24px 0; padding: 0 24px; }
+.ft-changes__rel + .ft-changes__rel { border-top: 1px solid var(--line); margin-top: 6px; }
+.ft-changes__date { font-size: var(--fs-12); font-weight: 650; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); padding: 16px 0 6px; }
+.ft-changes__items { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.ft-changes__item { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 12px; align-items: start; }
+.ft-changes__item > .ft-chip { justify-self: start; margin-top: 2px; }
+.ft-changes__title { font-family: var(--font-serif); font-size: var(--fs-16); color: var(--ink); margin: 0 0 2px; }
+.ft-changes__text { font-size: var(--fs-14); color: var(--ink-2); line-height: 1.5; margin: 0; }
+.ft-changes__ver { padding-top: 12px; margin: 0; }
+.is-phone .ft-changes__item { grid-template-columns: minmax(0, 1fr); gap: 4px; }

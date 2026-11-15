@@ -82,7 +82,8 @@
     var flt = {
       all: function () { return true; }, living: function (p) { return !p.deceased; }, deceased: function (p) { return !!p.deceased; },
       missing: function (p) { return !p.birth.date || (p.deceased && !p.death.date); }, nophoto: function (p) { return !p.photo; },
-      issues: function (p) { return !!probs[p.id]; }
+      issues: function (p) { return !!probs[p.id]; },
+      noday: function (p) { return !p.deceased && !FE.exactDay(p.birth.date); }
     };
     // the text filter first, so each chip counts what it would show
     var found = all.filter(function (p) { return !q || FE.matches(p, q) || (!p.given && !p.surname && 'невідомо'.indexOf(q) >= 0); });
@@ -98,8 +99,10 @@
       el('div.ft-spacer'),
       el('input.ft-input.ft-list__filter', { type: 'search', placeholder: 'Фільтр за іменем чи місцем', 'aria-label': 'Фільтрувати людей', value: s.listQuery, 'data-k': 'list-filter', on: { input: function (e) { A.set({ listQuery: e.target.value }); } } })));
     wrap.appendChild(el('div.ft-filters', { role: 'group', 'aria-label': 'Показати', style: 'margin-bottom:14px' },
-      [['all', 'Усі'], ['living', 'Живі'], ['deceased', 'Померлі'], ['missing', 'Бракує дат'], ['nophoto', 'Без фото'], ['issues', 'Перевірка даних']].map(function (f) {
+      [['all', 'Усі'], ['living', 'Живі'], ['deceased', 'Померлі'], ['missing', 'Бракує дат'], ['noday', 'Без дня народження'], ['nophoto', 'Без фото'], ['issues', 'Перевірка даних']].map(function (f) {
         if (f[0] === 'issues' && !all.some(flt.issues) && s.listFilter !== 'issues') return null;
+        // reached from «Найближчі події»; shown only while chosen
+        if (f[0] === 'noday' && s.listFilter !== 'noday') return null;
         return el('button.ft-filter' + (f[0] === 'issues' ? '.is-warn' : ''), { type: 'button', 'aria-pressed': String(s.listFilter === f[0]), 'data-k': 'flt:' + f[0], on: { click: function () { A.set({ listFilter: f[0] }); } } }, f[1], el('span.ft-filter__n', null, String(found.filter(flt[f[0]]).length)));
       })));
     var table = el('div.ft-table', { role: 'table', 'aria-label': 'Усі в дереві' });

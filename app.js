@@ -12,7 +12,7 @@
   var s = {
     data: null, rev: 0, focusId: null, view: 'tree', dvRoot: null,
     zoom: 1, panX: 0, panY: 0, anim: false, lineFade: false, centered: false, dragging: false,
-    density: pref('density', 'compact'), theme: pref('theme', 'system'), nameCase: pref('nameCase', 'as'),
+    density: pref('density', 'compact'), theme: pref('theme', 'system'), nameCase: pref('nameCase', 'as'), evOpen: false, evYear: false, evMemorial: pref('evMemorial', '1') === '1',
     present: location.hash === '#present' || pref('present', '0') === '1',
     drawerOpen: true, editMode: false, qa: null, menuOpen: false, statusOpen: false, explainerOpen: false, moreOpen: false,
     search: '', searchOpen: false, searchIdx: 0, phoneSearch: false,
@@ -651,6 +651,7 @@
     FA.renderOverlays(dom.overlays, A);
     renderToast();
     restoreFocus(keep);
+    if (s.screen === 'app' && s.data && !evToasted) { evToasted = true; later('evToast', 1200, todayToast); }
   }
   var touchOnly = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
 
@@ -727,6 +728,15 @@
     bar.appendChild(renderSearch(phone, tablet));
     // below 1100px search is an icon that opens a full-width row, so the title and the save status keep their room
     if (tablet) bar.appendChild(el('button.ft-icon-btn', { type: 'button', 'aria-label': 'Пошук', 'aria-keyshortcuts': '/', 'aria-expanded': String(s.phoneSearch), on: { click: function () { set({ phoneSearch: !s.phoneSearch, focusReq: !s.phoneSearch ? 'search' : null }); } } }, icon('search', 'ft-ico--lg')));
+    var soon = eventsSoon();
+    if (!phone && s.screen === 'app') {
+      bar.appendChild(el('div.ft-evbox', null,
+        el('button.ft-icon-btn.ft-evbtn' + (soon.week ? '.is-soon' : ''), { type: 'button', 'data-k': 'events', 'aria-expanded': String(s.evOpen), title: 'Найближчі події',
+          'aria-label': 'Найближчі події' + (soon.today ? ': сьогодні ' + soon.today : soon.week ? ': є цього тижня' : ''),
+          on: { click: function () { set({ evOpen: !s.evOpen, menuOpen: false, statusOpen: false, explainerOpen: false }); } } },
+          icon('calendar', 'ft-ico--lg'), soon.today ? el('span.ft-evbtn__n', { 'aria-hidden': 'true' }, String(soon.today)) : soon.week ? el('span.ft-evbtn__dot', { 'aria-hidden': 'true' }) : null),
+        s.evOpen ? renderEvents() : null));
+    }
     if (!phone && !s.otherTab && s.screen === 'app' && sample) {
       // the sample banner has the same button until it is dismissed
       if (St.S.fsSupported && !s.sampleNote) bar.appendChild(el('button.ft-btn.ft-btn--sm.ft-btn--primary', { type: 'button', 'data-k': 'own-tree', title: 'Виберіть порожню папку для нового дерева або папку, де вже є family.js', on: { click: connect } }, icon('folder', 'ft-ico--sm'), 'Своє дерево…'));
@@ -738,8 +748,12 @@
         bar.appendChild(renderStatus());
       }
     }
-    bar.appendChild(el('button.ft-icon-btn', { type: 'button', 'aria-label': 'Меню', 'aria-expanded': String(s.menuOpen), 'data-k': 'menu', on: { click: function () { set({ menuOpen: !s.menuOpen, statusOpen: false, explainerOpen: false }); } } }, icon('menu', 'ft-ico--lg')));
+    // on a phone the events live in the menu, and the menu button carries their dot
+    var phoneDot = phone && s.screen === 'app' && soon.week;
+    bar.appendChild(el('button.ft-icon-btn' + (phoneDot ? '.ft-evbtn.is-soon' : ''), { type: 'button', 'aria-label': 'Меню' + (phoneDot ? ' (є найближчі події)' : ''), 'aria-expanded': String(s.menuOpen), 'data-k': 'menu', on: { click: function () { set({ menuOpen: !s.menuOpen, evOpen: false, statusOpen: false, explainerOpen: false }); } } },
+      icon('menu', 'ft-ico--lg'), phoneDot ? el('span.ft-evbtn__dot', { 'aria-hidden': 'true' }) : null));
     if (s.menuOpen) bar.appendChild(renderMenu());
+    if (phone && s.evOpen) bar.appendChild(renderEvents());
   }
 
   function searchResults() {
@@ -833,6 +847,126 @@
   }
   A.closeBtn = closeBtn;
 
+  /* ---------------------------------------------------------------- upcoming events */
+  // Birthdays, anniversaries and memorial dates, worked out once a day per version of the data.
+  var evFor = null, evDay = '', evVal = { list: [], missing: 0 }, evToasted = false;
+  function upcoming() {
+    var day = new Date().toDateString();
+    if (!s.data) return { list: [], missing: 0 };
+    if (evFor !== s.data || evDay !== day) { evFor = s.data; evDay = day; evVal = FE.upcomingEvents(s.data, new Date(), 366); }
+    return evVal;
+  }
+  function shownEvents(days) { return upcoming().list.filter(function (e) { return e.inDays <= days && (s.evMemorial || !e.memorial); }); }
+  // the button: a dot for anything in the next week, a number on the day
+  function eventsSoon() {
+    var l = shownEvents(7);
+    return { today: l.filter(function (e) { return !e.inDays; }).length, week: l.length };
+  }
+  var WEDDING = { 25: 'срібне весілля', 50: 'золоте весілля', 60: 'діамантове весілля' };
+  function evText(e) {
+    var d = s.data, p = d.people[e.ids[0]], q = e.ids[1] && d.people[e.ids[1]];
+    var yrs = count(e.years, 'рік', 'роки', 'років');
+    return {
+      who: q ? FE.givenOf(p) + ' і ' + FE.givenOf(q) : FE.nameOf(p),
+      what: e.kind === 'birth' ? 'День народження · ' + yrs
+        : e.kind === 'union' ? yrs + (e.partner ? ' разом' : ' шлюбу') + (!e.partner && WEDDING[e.years] ? ' · ' + WEDDING[e.years] : '')
+        : e.kind === 'death' ? 'Роковини смерті · ' + yrs
+        : yrs + ' від народження'
+    };
+  }
+  function evWhen(e) { return !e.inDays ? 'сьогодні' : e.inDays === 1 ? 'завтра' : 'через ' + count(e.inDays, 'день', 'дні', 'днів'); }
+  function renderEvents() {
+    var d = s.data, ev = upcoming(), list = shownEvents(s.evYear ? 366 : 30);
+    var close = function () { set({ evOpen: false, focusReq: isPhone() ? 'menu' : 'events' }); };
+    var pop = el('div.ft-pop.ft-pop--right.ft-events', { role: 'dialog', 'aria-labelledby': 'ft-ev-title' },
+      el('div.ft-pop__head', null,
+        el('div', null, el('h3.ft-pop__title', { id: 'ft-ev-title' }, 'Найближчі події'), el('span.ft-hint', null, s.evYear ? 'на рік уперед' : 'наступні 30 днів')),
+        closeBtn(close, 'Закрити', 'ev-close')));
+    // today, this week, then by month
+    var groups = [], last = null;
+    list.forEach(function (e) {
+      var mo = FE.MONTHS_NOM[e.date.getMonth()], g = !e.inDays ? 'Сьогодні' : e.inDays <= 7 ? 'Цього тижня' : mo.charAt(0).toUpperCase() + mo.slice(1);
+      if (g !== last) { groups.push({ title: g, items: [] }); last = g; }
+      groups[groups.length - 1].items.push(e);
+    });
+    var body = el('div.ft-events__list');
+    groups.forEach(function (g) {
+      body.appendChild(el('p.ft-events__h', null, g.title));
+      g.items.forEach(function (e) {
+        var t = evText(e), p = d.people[e.ids[0]], q = e.ids[1] && d.people[e.ids[1]];
+        var date = e.date.toLocaleDateString('uk-UA', { weekday: 'short', day: 'numeric', month: 'long' });
+        body.appendChild(el('button.ft-ev' + (e.memorial ? '.is-memorial' : '') + (!e.inDays ? '.is-today' : ''), { type: 'button', 'data-k': 'ev:' + e.kind + ':' + e.ids[0],
+          on: { click: function () { set({ evOpen: false }); focusPerson(e.ids[0], { view: s.view === 'people' ? 'tree' : s.view }); } } },
+          el('span.ft-ev__who' + (q ? '.is-pair' : ''), null, q ? [avatar(p, 'ft-av--sm'), avatar(q, 'ft-av--sm')] : avatar(p)),
+          el('span.ft-ev__text', null,
+            el('span.ft-ev__name', null, t.who),
+            el('span.ft-ev__what', null, icon(e.kind === 'birth' ? 'cake' : e.kind === 'union' ? 'rings' : 'candle', 'ft-ico--sm'), t.what,
+              e.round && !e.memorial ? el('span.ft-chip.ft-chip--accent', null, 'ювілей') : null)),
+          el('span.ft-ev__when', null, el('span', null, evWhen(e)), el('span', null, date))));
+      });
+    });
+    if (!list.length) body.appendChild(el('p.ft-events__empty', null, s.evYear ? 'За рік уперед — жодної дати, відомої до дня.' : 'У найближчі 30 днів нічого немає.'));
+    pop.appendChild(body);
+    var foot = el('div.ft-events__foot');
+    foot.appendChild(el('label.ft-check', null, el('input', { type: 'checkbox', checked: s.evMemorial, 'data-k': 'ev-memorial',
+      on: { change: function (e) { setPref('evMemorial', e.target.checked ? '1' : '0'); set({ evMemorial: e.target.checked }); } } }), 'Показувати пам’ятні дати'));
+    if (ev.missing) foot.appendChild(el('p.ft-hint', null, 'У ' + ev.missing + ' ' + (ev.missing % 10 === 1 && ev.missing % 100 !== 11 ? 'людини' : 'людей') + ' немає дня й місяця народження. ',
+      el('button.ft-link', { type: 'button', on: { click: function () { set({ evOpen: false, listFilter: 'noday' }); setView('people'); } } }, 'Доповнити')));
+    foot.appendChild(el('div.ft-pop__actions', null,
+      el('button.ft-btn.ft-btn--sm', { type: 'button', 'data-k': 'ev-range', on: { click: function () { set({ evYear: !s.evYear }); } } }, s.evYear ? 'Лише 30 днів' : 'Увесь рік'),
+      el('button.ft-btn.ft-btn--sm', { type: 'button', 'data-k': 'ev-ics', title: 'Файл .ics для Google, Apple чи Outlook Календаря: вони й нагадуватимуть', on: { click: exportIcs } }, icon('calendar', 'ft-ico--sm'), 'Додати в календар')));
+    pop.appendChild(foot);
+    return pop;
+  }
+  // Every yearly date as a repeating all-day event, for the phone's own calendar to remind about
+  // (the app can't while it's closed). A birth date of someone who has died repeats every 10 years.
+  function exportIcs() {
+    var d = s.data, now = new Date(), pad = function (n) { return (n < 10 ? '0' : '') + n; };
+    var esc = function (t) { return String(t).replace(/[\;,]/g, function (c) { return '\\' + c; }).replace(/\n/g, '\\n'); };
+    // lines longer than 75 bytes go on folded continuation lines (Cyrillic is two bytes a letter)
+    var enc = new TextEncoder();
+    var fold = function (line) {
+      var out = [], cur = '', n = 0;
+      Array.from(line).forEach(function (ch) { var b = enc.encode(ch).length; if (n + b > 73) { out.push(cur); cur = ' '; n = 1; } cur += ch; n += b; });
+      return out.concat(cur).join('\r\n');
+    };
+    var stamp = now.getUTCFullYear() + pad(now.getUTCMonth() + 1) + pad(now.getUTCDate()) + 'T000000Z';
+    var lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Rodynnyi arkhiv//UK', 'CALSCALE:GREGORIAN', fold('X-WR-CALNAME:' + esc(d.title || 'Родинний архів'))];
+    var n = 0;
+    FE.yearlyDates(d).list.forEach(function (e) {
+      if ((e.kind === 'death' || e.kind === 'born') && !s.evMemorial) return;
+      var p = d.people[e.ids[0]], q = e.ids[1] && d.people[e.ids[1]];
+      var title = e.kind === 'birth' ? 'День народження: ' + FE.nameOf(p) + ' (' + e.y + ')'
+        : e.kind === 'union' ? (e.partner ? 'Річниця: ' : 'Річниця шлюбу: ') + FE.nameOf(p) + ' і ' + FE.nameOf(q) + ' (' + e.y + ')'
+        : e.kind === 'death' ? 'Роковини смерті: ' + FE.nameOf(p) + ' (' + e.y + ')'
+        : 'Ювілей від народження: ' + FE.nameOf(p) + ' (' + e.y + ')';
+      var feb29 = e.m === 2 && e.d === 29;
+      lines.push('BEGIN:VEVENT', 'UID:' + e.kind + '-' + e.ids.join('-') + '-' + ((d.meta && d.meta.treeId) || 'tree') + '@family-tree', 'DTSTAMP:' + stamp,
+        'DTSTART;VALUE=DATE:' + e.y + pad(e.m) + pad(e.d),
+        'RRULE:FREQ=YEARLY' + (e.kind === 'born' ? ';INTERVAL=10' : '') + (feb29 ? ';BYMONTH=2;BYMONTHDAY=-1' : ''),
+        fold('SUMMARY:' + esc(title)), 'TRANSP:TRANSPARENT',
+        'BEGIN:VALARM', 'ACTION:DISPLAY', fold('DESCRIPTION:' + esc(title)), 'TRIGGER:-PT15H', 'END:VALARM', 'END:VEVENT');
+      n++;
+    });
+    lines.push('END:VCALENDAR');
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([lines.join('\r\n') + '\r\n'], { type: 'text/calendar' }));
+    a.download = 'family-dates.ics';
+    document.body.appendChild(a); a.click(); a.remove();
+    toast('family-dates.ics завантажено — ' + count(n, 'подія', 'події', 'подій') + '. Відкрийте файл, щоб додати їх у свій календар.', false);
+  }
+  // Once a day, the first time the tree opens: what's on today.
+  function todayToast() {
+    if (sampleMode() || s.screen !== 'app' || s.toast) return;
+    var day = new Date().toDateString(), key = 'evSeen.' + ((s.data.meta && s.data.meta.treeId) || '');
+    if (pref(key, '') === day) return;
+    var l = shownEvents(0);
+    if (!l.length) return;
+    setPref(key, day);
+    var t = evText(l[0]);
+    toast('Сьогодні: ' + t.who + ' — ' + (t.what.charAt(0).toLowerCase() + t.what.slice(1)).replace(/ · /g, ', ') + (l.length > 1 ? ' і ще ' + (l.length - 1) : '') + '.', false);
+  }
+
   function renderMenu() {
     var S = St.S, folder = S.mode === 'folder', sample = S.mode === 'sample';
     var item = function (ic, label, go, hint, cls) {
@@ -860,6 +994,10 @@
       m.appendChild(el('div.ft-menu__sep', { role: 'separator' }));
       m.appendChild(el('div.ft-menu__label', null, 'Файл'));
       m.appendChild(item('download', 'Експорт GEDCOM (.ged)', exportGed));
+    }
+    if (isPhone() && s.screen === 'app') {
+      var sn = eventsSoon();
+      m.appendChild(item('calendar', 'Найближчі події', function () { set({ menuOpen: false, evOpen: true, focusReq: 'ev-close' }); }, sn.today ? 'сьогодні: ' + sn.today : sn.week ? 'цього тижня: ' + sn.week : null));
     }
     var nIssues = Object.keys(issues()).length;
     if (!sample) m.appendChild(item('alert', 'Перевірка даних', function () { set({ menuOpen: false, listFilter: 'issues' }); setView('people'); }, nIssues ? count(nIssues, 'людина', 'людини', 'людей') : 'усе гаразд'));
@@ -1418,7 +1556,7 @@
     delete ptrs[e.pointerId];
     var dr = drag;
     if (Object.keys(ptrs).length < 2) pinch = null;
-    if (dr && !dr.moved && (s.qa || s.depthOpen || s.menuOpen || s.statusOpen || s.moreOpen || s.showLegend)) set({ qa: null, depthOpen: false, menuOpen: false, statusOpen: false, moreOpen: false, showLegend: false });
+    if (dr && !dr.moved && (s.qa || s.depthOpen || s.menuOpen || s.evOpen || s.statusOpen || s.moreOpen || s.showLegend)) set({ qa: null, depthOpen: false, menuOpen: false, evOpen: false, statusOpen: false, moreOpen: false, showLegend: false });
     if (!Object.keys(ptrs).length) { drag = null; if (s.dragging) { s.dragging = false; applyView(); } }
   }
   function onWheel(e) {
@@ -1453,10 +1591,10 @@
     if (s.confirm) { set({ confirm: null, focusReq: 'card:' + s.focusId }); return true; }
     if (s.showKeys) { set({ showKeys: false, focusReq: 'card:' + s.focusId }); return true; }
     if (s.qa) { set({ qa: null, focusReq: 'card:' + s.focusId }); return true; }
-    if (s.menuOpen || s.statusOpen || s.explainerOpen || s.moreOpen || s.depthOpen || s.showLegend) {
+    if (s.menuOpen || s.evOpen || s.statusOpen || s.explainerOpen || s.moreOpen || s.depthOpen || s.showLegend) {
       // focus goes back to the button that opened it
-      var opener = s.menuOpen ? 'menu' : s.statusOpen || s.explainerOpen ? 'status' : s.moreOpen ? 'more' : s.depthOpen ? 'depth' : 'legend';
-      set({ menuOpen: false, statusOpen: false, explainerOpen: false, moreOpen: false, depthOpen: false, showLegend: false, focusReq: opener });
+      var opener = s.menuOpen ? 'menu' : s.evOpen ? (isPhone() ? 'menu' : 'events') : s.statusOpen || s.explainerOpen ? 'status' : s.moreOpen ? 'more' : s.depthOpen ? 'depth' : 'legend';
+      set({ menuOpen: false, evOpen: false, statusOpen: false, explainerOpen: false, moreOpen: false, depthOpen: false, showLegend: false, focusReq: opener });
       return true;
     }
     if (s.posterOpen) { set({ posterOpen: false, focusReq: 'card:' + s.focusId }); return true; }

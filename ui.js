@@ -69,6 +69,10 @@
     person: '<circle cx="12" cy="9" r="3.5"/><path d="M5.5 19.5a7 7 0 0 1 13 0"/>',
     image: '<rect x="3.5" y="4.5" width="17" height="15" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="M20.5 16l-5-5-9 8.5"/>',
     tree: '<circle cx="12" cy="5.5" r="2"/><circle cx="6" cy="18.5" r="2"/><circle cx="18" cy="18.5" r="2"/><path d="M12 7.5V14M6 16.5V14h12v2.5"/>',
+    calendar: '<rect x="4" y="5.5" width="16" height="14" rx="2"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/><path d="M8 14h2"/>',
+    cake: '<path d="M4.5 20h15v-6.5a2 2 0 0 0-2-2h-11a2 2 0 0 0-2 2z"/><path d="M4.5 15.5c1.5 1 3 1 4.5 0s3-1 4.5 0 3 1 4.5 0"/><path d="M12 11.5V8M12 5.5c-.8-.8-.8-1.6 0-2.5.8.9.8 1.7 0 2.5z"/>',
+    rings: '<circle cx="9" cy="14" r="5"/><circle cx="15" cy="14" r="5"/><path d="M10.5 4.5l1.5 2 1.5-2"/>',
+    candle: '<rect x="9" y="10" width="6" height="10" rx="1"/><path d="M12 10V8M12 6c-1-1-1-2 0-3.5 1 1.5 1 2.5 0 3.5z"/>',
     eye: '<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/>'
   };
   var NS = 'http://www.w3.org/2000/svg';

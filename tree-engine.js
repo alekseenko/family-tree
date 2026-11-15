@@ -189,6 +189,49 @@
     if (d && Math.floor(d / 10000) > now) return 'Рік смерті ще не настав.';
     return '';
   }
+  /* ------------------------------------------------------------ recurring dates */
+  // Everything that comes round every year, from dates known to the day: birthdays of the living,
+  // anniversaries of marriages still going (both partners alive), and memorial dates (the day someone
+  // died; a birth date of someone who has died). `missing`: living people whose birthday isn't known
+  // to the day and month.
+  function exactDay(v) { var r = readDate(v); return r && !r.bad && !r.free && !r.approx && r.y && r.m && r.d ? r : null; }
+  function yearlyDates(d) {
+    var out = [], missing = 0;
+    Object.keys(d.people).forEach(function (id) {
+      var p = d.people[id], b = exactDay(p.birth && p.birth.date);
+      if (!p.deceased) { if (b) out.push({ kind: 'birth', ids: [id], y: b.y, m: b.m, d: b.d }); else missing++; return; }
+      var dd = exactDay(deathDate(p));
+      if (dd) out.push({ kind: 'death', ids: [id], y: dd.y, m: dd.m, d: dd.d });
+      if (b) out.push({ kind: 'born', ids: [id], y: b.y, m: b.m, d: b.d });
+    });
+    d.families.forEach(function (f) {
+      var a = d.people[f.a], b = d.people[f.b], st = exactDay(f.start);
+      if (!st || !a || !b || a.deceased || b.deceased || f.end || (f.type !== 'married' && f.type !== 'partner')) return;
+      out.push({ kind: 'union', ids: [f.a, f.b], fam: f.id, partner: f.type === 'partner', y: st.y, m: st.m, d: st.d });
+    });
+    return { list: out, missing: missing };
+  }
+  // The ones coming up in the next `days` days from `today` (a Date, local time), soonest first, each with
+  // when it falls (`date`, `inDays`) and the count of years it marks. Someone born on 29 February has
+  // their day on the 28th in other years. Memorial birth dates count only on round years (100 years since…).
+  function upcomingEvents(d, today, days) {
+    var t0 = new Date(today.getFullYear(), today.getMonth(), today.getDate()), DAY = 864e5;
+    var yd = yearlyDates(d), out = [];
+    yd.list.forEach(function (e) {
+      var at = function (y) { return new Date(y, e.m - 1, e.m === 2 && e.d === 29 && new Date(y, 1, 29).getMonth() !== 1 ? 28 : e.d); };
+      var y = t0.getFullYear(), when = at(y);
+      if (when < t0) when = at(++y);
+      var years = y - e.y, inDays = Math.round((when - t0) / DAY);
+      if (inDays > days || years < 1) return;
+      if (e.kind === 'born' && years % 10) return;
+      var round = e.kind === 'union' ? years === 1 || years % 5 === 0 : e.kind === 'birth' ? years === 1 || years === 18 || (years > 0 && years % 10 === 0) : years % 10 === 0;
+      out.push(Object.assign({}, e, { date: when, inDays: inDays, years: years, round: round, memorial: e.kind === 'death' || e.kind === 'born' }));
+    });
+    var order = { birth: 0, union: 1, death: 2, born: 3 };
+    out.sort(function (x, y) { return x.inDays - y.inDays || order[x.kind] - order[y.kind] || x.y - y.y; });
+    return { list: out, missing: yd.missing };
+  }
+
   // Whole years between two dates, or null.
   function ageBetween(a, b) {
     var x = parseDate(a), y = parseDate(b);
@@ -1020,6 +1063,7 @@
     DIMS: DIMS,
     famsOf: famsOf, parentFams: parentFams, primaryParentFam: primaryParentFam, other: other, yearOf: yearOf, sortFams: sortFams,
     kidRel: kidRel, relatedIds: relatedIds, lineOf: lineOf, vf: vf, hasLoop: hasLoop, unionStyle: unionStyle, relStyle: relStyle, unionShort: unionShort, unionLong: unionLong, unionNumbered: unionNumbered, relTag: relTag,
+    MONTHS_NOM: MONTHS_NOM, exactDay: exactDay, yearlyDates: yearlyDates, upcomingEvents: upcomingEvents,
     nameOf: nameOf, givenOf: givenOf, caseName: caseName, setNameCase: setNameCase, initials: initials, yearsOf: yearsOf, fmtDate: fmtDate, parseDate: parseDate, readDate: readDate, normDate: normDate, dateProblem: dateProblem, ageBetween: ageBetween, searchText: searchText, matches: matches, fold: fold, byName: byName,
     siblingsOf: siblingsOf, alreadyLinked: alreadyLinked,
     newId: newId, insertKid: insertKid, splitName: splitName, removePerson: removePerson, detachPartner: detachPartner, detachParentLink: detachParentLink, tidyFamilies: tidyFamilies,

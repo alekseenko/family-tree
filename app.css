@@ -193,3 +193,40 @@ html[data-theme="dark"], html[data-theme="dark"] body { background: #191714; }
 .ft-scope__hidden .ft-link { font-size: inherit; }
 /* the bar's right padding is sized for a button at its end; text there needs more room */
 .ft-scope > .ft-scope__hidden:last-child { margin-right: 9px; }
+
+/* Найближчі події: a calendar button with a dot (this week) or a count (today), and its popover */
+.ft-evbox { position: relative; flex: none; }
+.ft-evbtn { position: relative; }
+.ft-evbtn.is-soon { color: var(--accent); }
+.ft-evbtn__dot { position: absolute; top: 4px; right: 4px; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 2px var(--surface); }
+.ft-evbtn__n { position: absolute; top: -3px; right: -4px; min-width: 17px; height: 17px; padding: 0 4px; border-radius: 9px; background: var(--accent); color: var(--accent-ink); font-size: 11px; font-weight: 650; line-height: 17px; text-align: center; box-shadow: 0 0 0 2px var(--surface); }
+.ft-events { width: 380px; padding: 14px 0 12px; gap: 0; max-height: calc(100vh - 80px); grid-template-rows: auto minmax(0, 1fr) auto; }
+.ft-events .ft-pop__head { padding: 0 12px 6px 16px; align-items: flex-start; }
+.ft-events .ft-pop__head .ft-hint { display: block; margin-top: 2px; }
+.ft-events__list { overflow: auto; min-height: 0; }
+.ft-events__h { font-size: var(--fs-11); font-weight: 650; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); padding: 12px 16px 4px; }
+.ft-events__empty { padding: 14px 16px; font-size: var(--fs-13); color: var(--ink-2); }
+.ft-ev { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px; width: 100%; padding: 8px 16px; border: 0; border-top: 1px solid var(--line); background: none; text-align: left; cursor: pointer; color: var(--ink); font: inherit; }
+.ft-events__h + .ft-ev { border-top: 0; }
+.ft-ev:hover { background: var(--surface-2); }
+.ft-ev:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--accent-line); }
+.ft-ev.is-today { background: var(--accent-soft); }
+.ft-ev__who { position: relative; width: 38px; height: 34px; }
+.ft-ev__who.is-pair .ft-av { position: absolute; width: 23px; height: 23px; font-size: 10px; }
+.ft-ev__who.is-pair .ft-av:first-child { left: 0; top: 0; }
+.ft-ev__who.is-pair .ft-av:last-child { right: -1px; bottom: -1px; box-shadow: 0 0 0 2px var(--surface); }
+.ft-ev.is-today .ft-ev__who.is-pair .ft-av:last-child { box-shadow: 0 0 0 2px var(--accent-soft); }
+.ft-ev__text { min-width: 0; display: grid; gap: 1px; }
+.ft-ev__name { font-family: var(--font-serif); font-size: var(--fs-15); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ft-ev__what { font-size: var(--fs-12); line-height: 1.45; color: var(--ink-2); }
+.ft-ev__what .ft-ico { display: inline-block; vertical-align: -3px; margin-right: 4px; }
+.ft-ev__what .ft-chip { font-size: 10.5px; padding: 0 6px; margin-left: 6px; vertical-align: 1px; }
+.ft-ev__when { display: grid; justify-items: end; font-size: var(--fs-12); color: var(--ink-2); white-space: nowrap; }
+.ft-ev__when > :first-child { color: var(--ink); font-weight: 600; }
+.ft-ev.is-memorial .ft-ev__name, .ft-ev.is-memorial .ft-ev__when > :first-child { color: var(--ink-2); font-weight: 400; }
+.ft-ev.is-memorial .ft-ev__what { color: var(--ink-3); }
+.ft-ev.is-memorial img { filter: var(--photo-deceased); }
+.ft-events__foot { display: grid; gap: 10px; padding: 12px 16px 0; border-top: 1px solid var(--line); }
+.ft-events__foot .ft-check { font-size: var(--fs-13); align-items: center; }
+/* on a phone: a sheet under the top bar, the width of the screen */
+.is-phone .ft-events { position: fixed; left: 8px; right: 8px; top: 56px; width: auto; max-height: calc(100vh - 72px); }

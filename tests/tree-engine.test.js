@@ -415,4 +415,36 @@ test('names shown as written, capitalised or in capitals; the data keeps them as
   assert.strictEqual(q.given, 'іван-петро');
 });
 
+test('upcoming events: birthdays, anniversaries, memorial dates; 29 February; only dates known to the day', () => {
+  const P = (id, b, extra) => Object.assign({ id, given: id, surname: '', sex: 'u', birth: { date: b, place: '' }, death: { date: '', place: '' }, deceased: false, photos: [] }, extra || {});
+  const d = {
+    people: {
+      a: P('a', '20.11.1996'), b: P('b', '29.02.2000'), c: P('c', '1990'), e: P('e', 'бл. 1950'),
+      m: P('m', '01.12.1970'), w: P('w', '02.02.1972'), x: P('x', '03.03.1960'), y: P('y', '04.04.1961'),
+      g: P('g', '25.11.1926', { deceased: true, death: { date: '18.11.2001', place: '' } })
+    },
+    families: [
+      { id: 'f1', a: 'm', b: 'w', type: 'married', start: '12.12.2001', end: '', kids: [] },
+      { id: 'f2', a: 'x', b: 'y', type: 'divorced', start: '20.11.1985', end: '1990', kids: [] }
+    ]
+  };
+  const r = FE.upcomingEvents(d, new Date(2026, 10, 15), 30);   // 15 November 2026
+  const by = (k, id) => r.list.find((e) => e.kind === k && e.ids[0] === id);
+  assert.strictEqual(r.missing, 2, 'c and e have no day and month');
+  assert.deepStrictEqual([by('birth', 'a').inDays, by('birth', 'a').years, by('birth', 'a').round], [5, 30, true]);
+  assert.strictEqual(by('death', 'g').inDays, 3);
+  assert.strictEqual(by('death', 'g').years, 25);
+  assert.strictEqual(by('born', 'g').years, 100, 'a round birth date of someone who has died');
+  assert.deepStrictEqual([by('union', 'm').years, by('union', 'm').inDays, by('union', 'm').round], [25, 27, true]);
+  assert.ok(!r.list.some((e) => e.ids.includes('x')), 'a divorce has no anniversary');
+  assert.deepStrictEqual(r.list.map((e) => e.inDays), r.list.map((e) => e.inDays).slice().sort((p, q) => p - q), 'soonest first');
+  // 29 February: on the 28th in other years, the 29th in a leap year
+  const feb = FE.upcomingEvents(d, new Date(2027, 1, 20), 30).list.find((e) => e.ids[0] === 'b');
+  assert.strictEqual(feb.date.getDate(), 28);
+  assert.strictEqual(FE.upcomingEvents(d, new Date(2028, 1, 20), 30).list.find((e) => e.ids[0] === 'b').date.getDate(), 29);
+  // a partner's death ends the anniversaries
+  d.people.w.deceased = true;
+  assert.ok(!FE.upcomingEvents(d, new Date(2026, 10, 15), 30).list.some((e) => e.kind === 'union'));
+});
+
 console.log(`\n${passed} tests passed`);
